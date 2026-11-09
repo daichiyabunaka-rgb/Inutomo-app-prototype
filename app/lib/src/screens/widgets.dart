@@ -6,7 +6,7 @@ import '../models.dart';
 import '../services/app_state.dart';
 
 /// 趣味アイコンのアバター。
-/// 投稿画像（料理写真など）があればそれを表示し、なければ趣味アイコンセットに
+/// 投稿画像（愛犬の写真など）があればそれを表示し、なければ趣味アイコンセットに
 /// フォールバックする。投稿画像は端末内パス（モック）または
 /// Supabase Storage の公開URL（URLは network 経由で表示）。
 /// 顔画像は不可（FR-1-3、AI審査は本開発で実装）。
@@ -53,12 +53,12 @@ Widget _fallbackIcon(AppUser user, double size, double iconScale) {
     height: size,
     decoration: BoxDecoration(
       shape: BoxShape.circle,
-      color: Colors.deepOrange.shade50,
+      color: Colors.brown.shade50,
     ),
     child: Icon(
       cat.icon,
       size: size * iconScale,
-      color: Colors.deepOrange.shade800,
+      color: Colors.brown.shade700,
     ),
   );
 }
@@ -68,16 +68,16 @@ Widget genreChip(String genreId) {
   return Container(
     padding: const.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
-      color: Colors.orange.shade50,
+      color: Colors.brown.shade50,
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.orange.shade200),
+      border: Border.all(color: Colors.brown.shade200),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(g.icon, size: 14, color: Colors.orange.shade800),
+        Icon(g.icon, size: 14, color: Colors.brown.shade700),
         const SizedBox(width: 4),
-        Text(g.label, style: TextStyle(color: Colors.orange.shade900, fontSize: 12)),
+        Text(g.label, style: TextStyle(color: Colors.brown.shade800, fontSize: 12)),
       ],
     ),
   );

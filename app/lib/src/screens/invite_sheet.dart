@@ -28,7 +28,7 @@ Future<void> showInviteSheet(BuildContext context) {
     if (me.isBusiness)
       _InviteOption(
         '同業者のお店を紹介する',
-        '近くの飲食店仲間に「飯とも！」を勧める',
+        '近くのドッグラン・ペット業界仲間に「犬とも！」を勧める',
         businessInviteText(
             me.nickname, (me as BusinessUser).storeType),
       ),
@@ -96,7 +96,7 @@ Future<void> showInviteSheet(BuildContext context) {
                               try {
                                 await SharePlus.instance.share(
                                   ShareParams(
-                                    title: '飯とも！',
+                                    title: '犬とも！',
                                     text: option.text,
                                   ),
                                 );

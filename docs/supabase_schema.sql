@@ -1,4 +1,4 @@
--- 飯とも！ Supabase スキーマ（v1.5 バックエンド設計）
+-- 犬とも！ Supabase スキーマ（v1.5 バックエンド設計）
 -- 使い方: Supabase プロジェクトを作成し、SQL Editor でこのファイルを実行する。
 -- その後、アプリ側で supabase_flutter を導入し、モックサービス
 -- (AuthService / AppState のデータ層) を Supabase 実装に差し替える。
@@ -151,7 +151,7 @@ create table public.stores (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references public.profiles(id) on delete cascade,
   name text not null,
-  industry_type text not null,            -- '居酒屋' | 'ラーメン店' ...
+  industry_type text not null,            -- 'ドッグラン' | 'ペットサロン・トリミング' ...
   serves_alcohol boolean not null default false,
   address text not null default '',
   location_geohash text,

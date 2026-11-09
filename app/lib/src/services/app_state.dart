@@ -40,7 +40,7 @@ class AppState extends ChangeNotifier {
 
   // ------------------------------------------------------------ categories
 
-  static const _kCustomCategories = 'meshitomo_custom_categories';
+  static const _kCustomCategories = 'inutomo_custom_categories';
 
   /// 興味カテゴリ一覧（デフォルト + ユーザー追加分）
   List<InterestCategory> get categories => List.unmodifiable(_categories);
@@ -376,59 +376,59 @@ class AppState extends ChangeNotifier {
     final now = _now();
     _communities.addAll([
       Community(
-        id: 'c-ramen',
-        ownerId: 'u-ramen-ken',
-        name: 'ラーメン部',
-        description: '週1で開拓ラーメン会。初心者歓迎。スープの話をしよう。',
+        id: 'c-dogrun',
+        ownerId: 'u-shiba-moku',
+        name: 'ドッグラン遠征隊',
+        description: '休日に近郊のドッグランを遠征する会。初心者歓迎。ワンちゃんの話をしよう。',
         linkedStore: null,
         createdAt: now.subtract(const Duration(days: 12)),
-        memberIds: {'u-ramen-ken', 'u-spicy-tan', 'u-sushi-masa'},
+        memberIds: {'u-shiba-moku', 'u-corgi-taro', 'u-shibainu-masa'},
       ),
       Community(
-        id: 'c-noren',
-        ownerId: 'b-izakaya-noren',
-        name: 'のれん常連会',
-        description: '居酒屋 のれん のファンコミュニティ。新作おつまみの試食会もやります。',
-        linkedStore: '居酒屋 のれん',
+        id: 'c-wanpluza',
+        ownerId: 'b-dogrun-wanpluza',
+        name: 'わんぷらざ常連会',
+        description: 'ドッグラン わんぷらざ のファンコミュニティ。プレイマナー勉強会もやります。',
+        linkedStore: 'ドッグラン わんぷらざ',
         createdAt: now.subtract(const Duration(days: 8)),
-        memberIds: {'b-izakaya-noren', 'u-izakaya-ryo', 'u-yakiniku-mi'},
+        memberIds: {'b-dogrun-wanpluza', 'u-chihuahua-nana', 'u-golden-rin'},
       ),
       Community(
-        id: 'c-sweets',
-        ownerId: 'u-sweets-hana',
-        name: '甘いものクラブ',
-        description: 'スイーツ写真を交換する会。月1でパンケーキオフ。',
+        id: 'c-photo',
+        ownerId: 'u-pome-yui',
+        name: '愛犬撮影クラブ',
+        description: '愛犬の写真を交換する会。月1で撮影オフ会。',
         linkedStore: null,
         createdAt: now.subtract(const Duration(days: 3)),
-        memberIds: {'u-sweets-hana', 'u-cafe-yam'},
+        memberIds: {'u-pome-yui', 'u-toypoodle-aoi'},
       ),
     ]);
-    _eventsByCommunity['c-ramen'] = [
+    _eventsByCommunity['c-dogrun'] = [
       CommunityEvent(
-        id: 'e-ramen-1',
-        communityId: 'c-ramen',
-        hostId: 'u-ramen-ken',
-        title: '第4回 開拓ラーメン会',
-        body: '今月は駅西側の新店2軒をはしごします。',
-        eventTime: '今週土曜 18:00〜',
+        id: 'e-dogrun-1',
+        communityId: 'c-dogrun',
+        hostId: 'u-shiba-moku',
+        title: '第4回 ドッグラン遠征',
+        body: '今月は北側の森のドッグランへ行きます。',
+        eventTime: '今週土曜 10:00〜',
         locationName: '駅北口 集合',
         capacity: 6,
         createdAt: now.subtract(const Duration(days: 2)),
-        participantIds: {'u-ramen-ken', 'u-spicy-tan'},
+        participantIds: {'u-shiba-moku', 'u-corgi-taro'},
       ),
     ];
-    _eventsByCommunity['c-noren'] = [
+    _eventsByCommunity['c-wanpluza'] = [
       CommunityEvent(
-        id: 'e-noren-1',
-        communityId: 'c-noren',
-        hostId: 'b-izakaya-noren',
-        title: '新作おつまみ試食会',
-        body: '常連さん限定で新作3品を試食いただきます。感想で名前を決めます。',
-        eventTime: '来週金曜 19:00〜',
-        locationName: '居酒屋 のれん',
+        id: 'e-wanpluza-1',
+        communityId: 'c-wanpluza',
+        hostId: 'b-dogrun-wanpluza',
+        title: 'ドッグランマナー勉強会',
+        body: '常連さん限定で初めてのワンちゃんへの接し方レクチャーをやります。',
+        eventTime: '来週日曜 15:00〜',
+        locationName: 'ドッグラン わんぷらざ',
         capacity: 10,
         createdAt: now.subtract(const Duration(days: 1)),
-        participantIds: {'b-izakaya-noren'},
+        participantIds: {'b-dogrun-wanpluza'},
       ),
     ];
   }

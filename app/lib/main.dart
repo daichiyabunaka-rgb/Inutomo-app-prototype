@@ -28,21 +28,21 @@ void main() async {
       appState.attachUser(restored, reseed: true);
     }
   }
-  runApp(const MeshitomoApp());
+  runApp(const InutomoApp());
 }
 
-class MeshitomoApp extends StatelessWidget {
-  const MeshitomoApp({super.key});
+class InutomoApp extends StatelessWidget {
+  const InutomoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '飯とも！（プロトタイプ）',
+      title: '犬とも！（プロトタイプ）',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFD9480F),
+          seedColor: const Color(0xFF795548),
         ),
       ),
       home: ListenableBuilder(

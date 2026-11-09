@@ -64,7 +64,7 @@ class _RecruitmentDetailScreenState extends State<RecruitmentDetailScreen> {
               try {
                 await SharePlus.instance.share(
                   ShareParams(
-                    title: '飯とも！',
+                    title: '犬とも！',
                     text: recruitmentShareText(rec.title, rec.meetup),
                   ),
                 );

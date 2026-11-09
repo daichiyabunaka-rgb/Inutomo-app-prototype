@@ -27,7 +27,7 @@ admin = {"apikey": SECRET, "Authorization": f"Bearer {SECRET}"}
 
 # 1. 一時ユーザー作成（確認済み）
 code, res = call("POST", "/auth/v1/admin/users", admin, {
-    "email": "meshitomo-rls-probe@example-test.com",
+    "email": "inutomo-rls-probe@example-test.com",
     "password": "RlsProbe123!@",
     "email_confirm": True,
 })
@@ -37,7 +37,7 @@ print("create temp user:", code, uid)
 # 2. ログインしてクライアントトークン取得
 code, res = call("POST", "/auth/v1/token?grant_type=password",
                  {"apikey": PUBLISHABLE},
-                 {"email": "meshitomo-rls-probe@example-test.com",
+                 {"email": "inutomo-rls-probe@example-test.com",
                   "password": "RlsProbe123!@"})
 token = res["access_token"]
 client = {"apikey": PUBLISHABLE, "Authorization": f"Bearer {token}"}

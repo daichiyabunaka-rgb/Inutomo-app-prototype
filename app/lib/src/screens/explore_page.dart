@@ -61,7 +61,7 @@ class _ExplorePageState extends State<ExplorePage> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Text('近くの飯とも候補（${users.length}人）',
+                Text('近くの犬とも候補（${users.length}人）',
                     style: theme.textTheme.titleSmall),
                 const SizedBox(height: 8),
                 for (final u in users)
@@ -96,13 +96,13 @@ class _ExplorePageState extends State<ExplorePage> {
                             Icon(Icons.storefront,
                                 color: theme.colorScheme.primary),
                             const SizedBox(width: 8),
-                            Text('店を探す（v1.5で追加）',
+                            Text('ドッグランやサロンを探す（v1.5で追加）',
                                 style: theme.textTheme.titleSmall),
                           ],
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'ビジネスユーザー（飲食店）が店舗を登録し、'
+                          'ビジネスユーザー（ドッグラン、ペットサロン、動物病院など）が店舗を登録し、'
                           '地図連携（マップ表示・Googleマップで開く）や'
                           'お店へのDM・電話連絡をご利用いただけます。'
                           'ベータ期間中は無料です（AI接客は準備中）。',
@@ -131,7 +131,7 @@ class _ExplorePageState extends State<ExplorePage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '常連の居酒屋コミュニティ、社会人部活、地域のイベントなど、'
+                          '常連のドッグランコミュニティ、犬種別のオフ会、地域のイベントなど、'
                           '誰でも作成・参加できるようになります。'
                           'ビジネスユーザーも一般ユーザーも一緒に参加できます。',
                           style: theme.textTheme.bodySmall,

@@ -82,7 +82,7 @@ class _EventCreateSheetState extends State<_EventCreateSheet> {
             const SizedBox(height: 4),
             Text(
               'コミュニティ参加者に向けて企画できます。'
-              '食事会・オフ会・定例会など、気軽にどうぞ。',
+              'お散歩会・ドッグラン遠征・定例会など、気軽にどうぞ。',
               style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: 16),
@@ -91,7 +91,7 @@ class _EventCreateSheetState extends State<_EventCreateSheet> {
               maxLength: 40,
               decoration: const InputDecoration(
                 labelText: 'タイトル',
-                hintText: '例: 第2回 開拓ラーメン会',
+                hintText: '例: 第2回 ドッグラン遠征',
                 border: OutlineInputBorder(),
                 counterText: '',
               ),
@@ -125,7 +125,7 @@ class _EventCreateSheetState extends State<_EventCreateSheet> {
               maxLength: 120,
               decoration: const InputDecoration(
                 labelText: '内容',
-                hintText: '例: 新店2軒をはしご。初心者歓迎',
+                hintText: '例: 桜並木コースを1時間。初心者歓迎',
                 border: OutlineInputBorder(),
               ),
             ),

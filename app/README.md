@@ -1,4 +1,4 @@
-# meshitomo
+# inutomo
 
 A new Flutter project.
 

@@ -97,7 +97,7 @@ class SupabaseData {
         nickname: (row['nickname'] as String?) ?? '店舗',
         decade: (row['birth_decade'] as String?) ?? '経営者',
         gender: row['gender'] as String? ?? 'undisclosed',
-        iconCategoryId: row['icon_category_id'] as String? ?? 'izakaya',
+        iconCategoryId: row['icon_category_id'] as String? ?? 'sanpo',
         interestIds:
             ((row['interest_ids'] as List?) ?? const []).cast<String>(),
         bio: (row['bio'] as String?) ?? '',
@@ -114,7 +114,7 @@ class SupabaseData {
       nickname: (row['nickname'] as String?) ?? '名無し',
       decade: (row['birth_decade'] as String?) ?? '非公開',
       gender: row['gender'] as String? ?? 'undisclosed',
-      iconCategoryId: row['icon_category_id'] as String? ?? 'ramen',
+      iconCategoryId: row['icon_category_id'] as String? ?? 'sanpo',
       interestIds: ((row['interest_ids'] as List?) ?? const []).cast<String>(),
       bio: (row['bio'] as String?) ?? '',
       lat: lat,

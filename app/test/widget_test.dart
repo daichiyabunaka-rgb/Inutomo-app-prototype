@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:meshitomo/main.dart';
-import 'package:meshitomo/src/models.dart';
-import 'package:meshitomo/src/services/ai_concierge.dart';
-import 'package:meshitomo/src/services/app_state.dart';
-import 'package:meshitomo/src/services/auth_service.dart';
-import 'package:meshitomo/src/util/format.dart';
-import 'package:meshitomo/src/util/share_text.dart';
+import 'package:inutomo/main.dart';
+import 'package:inutomo/src/models.dart';
+import 'package:inutomo/src/services/ai_concierge.dart';
+import 'package:inutomo/src/services/app_state.dart';
+import 'package:inutomo/src/services/auth_service.dart';
+import 'package:inutomo/src/util/dog_parks.dart';
+import 'package:inutomo/src/util/format.dart';
+import 'package:inutomo/src/util/share_text.dart';
 
 AppUser _testUser(AppState state, {String id = 'me', String nickname = 'テスト太郎'}) {
   return AppUser(
@@ -16,8 +17,8 @@ AppUser _testUser(AppState state, {String id = 'me', String nickname = 'テス�
     nickname: nickname,
     decade: '30代',
     gender: 'male',
-    iconCategoryId: 'ramen',
-    interestIds: const ['ramen'],
+    iconCategoryId: 'sanpo',
+    interestIds: const ['sanpo'],
     bio: 'テスト',
     lat: state.anchorLat,
     lng: state.anchorLng,
@@ -50,25 +51,46 @@ void main() {
 
   group('share_text（SNS共有文）', () {
     test('招待文にニックネームとURLが入る', () {
-      final t = inviteText('焼肉のみゆ');
-      expect(t, contains('焼肉のみゆ'));
+      final t = inviteText('柴犬のもくのパパ');
+      expect(t, contains('柴犬のもくのパパ'));
       expect(t, contains(kAppUrl));
       expect(t, contains('完全無料'));
     });
 
     test('募集の共有文にタイトルと集合場所が入る', () {
-      final t = recruitmentShareText('今夜19時ラーメン', '神田駅');
-      expect(t, contains('今夜19時ラーメン'));
-      expect(t, contains('神田駅'));
+      final t = recruitmentShareText('今から公園でお散歩', '中央公園の入り口');
+      expect(t, contains('今から公園でお散歩'));
+      expect(t, contains('中央公園の入り口'));
       expect(t, contains(kAppUrl));
     });
 
     test('同業者向けの紹介文に店舗名と業態と無料表記が入る', () {
-      final t = businessInviteText('居酒屋 のれん', '居酒屋');
-      expect(t, contains('居酒屋 のれん'));
-      expect(t, contains('居酒屋'));
+      final t = businessInviteText('ドッグラン わんぷらざ', 'ドッグラン');
+      expect(t, contains('ドッグラン わんぷらざ'));
+      expect(t, contains('ドッグラン'));
       expect(t, contains('無料'));
       expect(t, contains(kAppUrl));
+    });
+  });
+
+  group('近くの公園（犬とも！特別機能）', () {
+    test('公園は現在地を中心に粗いバンド内に配置される', () {
+      final parks = placeDogParks(35.6812, 139.7671);
+      expect(parks, isNotEmpty);
+      for (final p in parks) {
+        final km =
+            haversineKm(35.6812, 139.7671, p.lat, p.lng);
+        expect(km, lessThan(6.0));
+      }
+      // ドッグランと公園の両方がシードに入っている
+      expect(parks.any((p) => p.park.isDogRun), isTrue);
+      expect(parks.any((p) => !p.park.isDogRun), isTrue);
+    });
+
+    test('Googleマップ用URLは名前検索のURLになる（APIキー不要）', () {
+      final url = googleMapsUrlForPark('中央公園 ドッグラン');
+      expect(url, startsWith('https://www.google.com/maps/search/'));
+      expect(url, contains(Uri.encodeComponent('中央公園 ドッグラン')));
     });
   });
 
@@ -86,8 +108,8 @@ void main() {
         nickname: '太郎',
         decade: '30代',
         gender: 'male',
-        iconCategoryId: 'ramen',
-        interestIds: const ['ramen'],
+        iconCategoryId: 'sanpo',
+        interestIds: const ['sanpo'],
         bio: 'テスト',
       );
       expect(auth.sessionEmail, 'test@example.com'); // 小文字化して保存
@@ -113,8 +135,8 @@ void main() {
           nickname: '二郎',
           decade: '20代',
           gender: 'male',
-          iconCategoryId: 'ramen',
-          interestIds: const ['ramen'],
+          iconCategoryId: 'sanpo',
+          interestIds: const ['sanpo'],
           bio: '',
         ),
         throwsA(isA<AuthException>()),
@@ -131,8 +153,8 @@ void main() {
         nickname: '花子',
         decade: '20代',
         gender: 'female',
-        iconCategoryId: 'sweets',
-        interestIds: const ['sweets'],
+        iconCategoryId: 'photo',
+        interestIds: const ['photo'],
         bio: 'テスト',
       );
       final user = await auth.buildSessionUser(lat: 35.0, lng: 139.0);
@@ -148,55 +170,54 @@ void main() {
       nickname: '太郎',
       decade: '30代',
       gender: 'male',
-      iconCategoryId: 'ramen',
-      interestIds: const ['ramen'],
+      iconCategoryId: 'sanpo',
+      interestIds: const ['sanpo'],
       bio: 'テスト',
       lat: 35.0,
       lng: 139.0,
     );
     final store = BusinessUser(
-      id: 'b-ramen-niban',
-      nickname: 'ラーメン二番',
+      id: 'b-dogrun-wanpluza',
+      nickname: 'ドッグラン わんぷらざ',
       decade: '経営者',
       gender: 'undisclosed',
-      iconCategoryId: 'ramen',
+      iconCategoryId: 'dogrun',
       interestIds: const [],
       bio: 'デモ店舗',
       lat: 35.0,
       lng: 139.0,
-      storeType: 'ラーメン店',
+      storeType: 'ドッグラン',
     );
 
     test('挨拶は店舗の口調とユーザーの興味を踏まえて案内する', () {
       final g = aiConcierge.greeting(me, store);
-      expect(g, contains('ようこそ')); // ラーメン店の口調
+      expect(g, contains('いらっしゃい')); // ドッグランの口調
       expect(g, contains('太郎'));
-      expect(g, contains('ラーメン'));
-      expect(g, contains('とんこつ背脂'));
+      expect(g, contains('お散歩'));
+      expect(g, contains('小型犬と大型犬'));
     });
 
     test('口調は店舗タイプごとに変わる', () {
-      final izakaya = BusinessUser(
-        id: 'b-izakaya-noren',
-        nickname: '居酒屋 のれん',
+      final vet = BusinessUser(
+        id: 'b-vet-aibuki',
+        nickname: 'あいぶき動物病院',
         decade: '経営者',
         gender: 'undisclosed',
-        iconCategoryId: 'izakaya',
+        iconCategoryId: 'health',
         interestIds: const [],
         bio: 'デモ店舗',
         lat: 35.0,
         lng: 139.0,
-        storeType: '居酒屋',
+        storeType: '動物病院',
       );
-      expect(aiConcierge.greeting(me, izakaya), contains('お疲れさん'));
+      expect(aiConcierge.greeting(me, vet), contains('気軽にご相談'));
     });
 
-    test('キーワードに応じた応答をする（おすすめ/席/予約/Business unknown）',
-        () {
+    test('キーワードに応じた応答をする（おすすめ/料金/予約/unknown）', () {
       final ai = aiConcierge;
-      expect(ai.reply('おすすめは？', me, store), contains('とんこつ'));
-      expect(ai.reply('席が空いてる？', me, store), contains('カウンター'));
-      expect(ai.reply('予約したいです', me, store), contains('19時'));
+      expect(ai.reply('おすすめは？', me, store), contains('小型犬と大型犬'));
+      expect(ai.reply('大型犬でも大丈夫？', me, store), contains('歓迎'));
+      expect(ai.reply('予約したいです', me, store), contains('平日'));
       // どのキーワードにも当てはまらない場合は案内を返す
       expect(ai.reply('こんにちは', me, store), contains('おすすめ'));
     });
@@ -237,7 +258,7 @@ void main() {
       final state = AppState();
       state.attachUser(_testUser(state), reseed: true);
       final rec = await state.createRecruitment(
-        genreId: 'meshi',
+        genreId: 'sanpo',
         title: 'テストの募集',
         body: '本文',
         meetup: 'テスト駅',
@@ -277,8 +298,8 @@ void main() {
         nickname: 'テスト太郎',
         decade: '30代',
         gender: 'male',
-        iconCategoryId: 'ramen',
-        interestIds: const ['ramen'],
+        iconCategoryId: 'sanpo',
+        interestIds: const ['sanpo'],
         bio: 'テスト',
         iconImagePath: '/data/user/0/app/icons/icon_1.jpg',
       );
@@ -372,9 +393,9 @@ void main() {
     test('イベントへの参加・取消ができる', () async {
       final state = AppState();
       state.attachUser(_testUser(state), reseed: true);
-      // シード済みコミュニティ（自分未参加の c-ramen）のイベントへ参加する
+      // シード済みコミュニティ（自分未参加の c-dogrun）のイベントへ参加する
       final community =
-          state.communities.firstWhere((c) => c.id == 'c-ramen');
+          state.communities.firstWhere((c) => c.id == 'c-dogrun');
       final target = state.eventsOf(community.id).first;
       await state.joinEvent(target.id);
       expect(state.eventsOf(community.id).first.participantIds,
@@ -391,16 +412,16 @@ void main() {
       // attachUser 内で loadCategories が走る
       final before = state.categories.length;
       final created =
-          await state.addCategory(label: '珈琲巡り', iconName: 'coffee');
+          await state.addCategory(label: 'フリスビー', iconName: 'ball');
       expect(created, isNotNull);
       expect(state.categories.length, before + 1);
-      expect(state.categories.any((c) => c.label == '珈琲巡り'), isTrue);
+      expect(state.categories.any((c) => c.label == 'フリスビー'), isTrue);
       // 未知のIDはフォールバック表示（例外にならない）
       final unknown = state.categoryOf('made-on-other-device');
       expect(unknown.label, 'made-on-other-device');
       // 同名カテゴリは拒否される
       final dup =
-          await state.addCategory(label: '珈琲巡り', iconName: 'restaurant');
+          await state.addCategory(label: 'フリスビー', iconName: 'pets');
       expect(dup, isNull);
       expect(state.categories.length, before + 1);
     });
@@ -412,7 +433,7 @@ void main() {
       final rec = Recruitment(
         id: 'r-x',
         hostId: 'h',
-        genreId: 'meshi',
+        genreId: 'sanpo',
         title: 't',
         body: 'b',
         meetup: 'm',
@@ -445,8 +466,8 @@ void main() {
   });
 
   testWidgets('未ログインではログイン画面が出る', (tester) async {
-    await tester.pumpWidget(const MeshitomoApp());
-    expect(find.text('飯とも！'), findsOneWidget);
+    await tester.pumpWidget(const InutomoApp());
+    expect(find.text('犬とも！'), findsOneWidget);
     expect(find.text('ログイン'), findsWidgets);
     expect(find.text('はじめての方は会員登録へ'), findsOneWidget);
     expect(find.text('会員登録'), findsNothing);

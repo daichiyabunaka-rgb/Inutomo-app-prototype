@@ -8,6 +8,7 @@ import '../util/format.dart';
 import 'recruitment_create_sheet.dart';
 import 'recruitment_detail_screen.dart';
 import 'map_screen.dart';
+import 'park_page.dart';
 import 'store_sheet.dart';
 import 'user_detail_screen.dart';
 import 'widgets.dart';
@@ -16,6 +17,7 @@ import 'widgets.dart';
 /// [募集] アクティブな募集を距離順に表示（FR-2-2）
 /// [人] 近くの一般ユーザーのアイコンが並ぶ（要望: 位置情報から近くの一般ユーザー）
 /// [店] 近くのビジネスユーザーのアイコンが並ぶ（要望: 近くのビジネスユーザー）
+/// [公園] 近くの公園・ドッグランを探す（Googleマップ連携）
 class NearPage extends StatefulWidget {
   const NearPage({super.key});
 
@@ -23,7 +25,7 @@ class NearPage extends StatefulWidget {
   State<NearPage> createState() => _NearPageState();
 }
 
-enum NearTab { recruit, people, business }
+enum NearTab { recruit, people, business, park }
 
 class _NearPageState extends State<NearPage> {
   Timer? _ticker;
@@ -89,6 +91,10 @@ class _NearPageState extends State<NearPage> {
                       value: NearTab.business,
                       icon: Icon(Icons.storefront),
                       label: Text('店')),
+                  ButtonSegment(
+                      value: NearTab.park,
+                      icon: Icon(Icons.park_outlined),
+                      label: Text('公園')),
                 ],
                 selected: {_tab},
                 onSelectionChanged: (s) => setState(() => _tab = s.first),
@@ -108,6 +114,9 @@ class _NearPageState extends State<NearPage> {
                       break;
                     case NearTab.business:
                       body = _businessList(context);
+                      break;
+                    case NearTab.park:
+                      body = const ParkPage();
                       break;
                   }
                   // Supabase モードでは引き更新で実データを再取得

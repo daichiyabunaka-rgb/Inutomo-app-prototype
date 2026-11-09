@@ -9,9 +9,9 @@ class Genre {
 }
 
 const List<Genre> genres = [
-  Genre('meshi', 'ご飯', Icons.dinner_dining),
-  Genre('nomi', '飲み', Icons.local_bar),
-  Genre('cafe', 'カフェ', Icons.local_cafe),
+  Genre('sanpo', 'お散歩', Icons.directions_walk),
+  Genre('dogrun', 'ドッグラン', Icons.pets),
+  Genre('dogcafe', 'ドッグカフェ', Icons.local_cafe),
 ];
 
 Genre genreById(String id) => genres.firstWhere((g) => g.id == id);
@@ -28,45 +28,44 @@ class InterestCategory {
 }
 
 const List<InterestCategory> interestCategories = [
-  InterestCategory('izakaya', '居酒屋', Icons.local_bar),
-  InterestCategory('yakiniku', '焼肉', Icons.outdoor_grill),
-  InterestCategory('ramen', 'ラーメン', Icons.ramen_dining),
-  InterestCategory('cafe', 'カフェ', Icons.local_cafe),
-  InterestCategory('sweets', 'スイーツ', Icons.cake),
-  InterestCategory('sushi', '寿司・魚介', Icons.set_meal),
-  InterestCategory('pasta', 'パスタ・イタリアン', Icons.dinner_dining),
-  InterestCategory('pizza', 'ピザ', Icons.local_pizza),
-  InterestCategory('burger', 'ハンバーガー', Icons.lunch_dining),
-  InterestCategory('spicy', '激辛', Icons.local_fire_department),
-  InterestCategory('ethnic', 'エスニック・アジア', Icons.rice_bowl),
-  InterestCategory('brunch', '朝食・ブランチ', Icons.brunch_dining),
+  InterestCategory('sanpo', 'お散歩', Icons.directions_walk),
+  InterestCategory('dogrun', 'ドッグラン', Icons.pets),
+  InterestCategory('dogcafe', 'ドッグカフェ', Icons.local_cafe),
+  InterestCategory('training', 'しつけ・トレーニング', Icons.school),
+  InterestCategory('sports', 'アジリティ・ドッグスポーツ', Icons.sports),
+  InterestCategory('photo', '愛犬撮影', Icons.camera_alt),
+  InterestCategory('goods', 'グッズ・おやつ研究', Icons.shopping_basket),
+  InterestCategory('travel', 'お出かけ・旅行', Icons.luggage),
+  InterestCategory('health', '健康・動物病院', Icons.medical_services),
+  InterestCategory('grooming', 'トリミング・お手入れ', Icons.content_cut),
+  InterestCategory('rescue', '保護犬・里亲身', Icons.volunteer_activism),
+  InterestCategory('wanko', '犬友達・多頭飼い', Icons.diversity_1),
 ];
 
 /// カスタムカテゴリのアイコン候補（名前でDB保存するため定数マップ）。
-/// 本アプリは飲食に特化するため、アイコンも飲食系のみとする
+/// 本アプリは犬に特化するため、アイコンも犬・ペット系のみとする
 /// （その他の趣味は別アプリで展開する方針）。
 const Map<String, IconData> categoryIconChoices = {
-  'restaurant': Icons.restaurant,
-  'ramen': Icons.ramen_dining,
-  'coffee': Icons.local_cafe,
-  'bar': Icons.local_bar,
-  'wine': Icons.wine_bar,
-  'beer': Icons.sports_bar,
-  'liquor': Icons.liquor,
-  'bakery': Icons.bakery_dining,
-  'seafood': Icons.set_meal,
-  'fastfood': Icons.fastfood,
-  'sweets': Icons.icecream,
-  'pizza': Icons.local_pizza,
-  'burger': Icons.lunch_dining,
-  'dinner': Icons.dinner_dining,
-  'brunch': Icons.brunch_dining,
-  'takeout': Icons.takeout_dining,
+  'pets': Icons.pets,
+  'walk': Icons.directions_walk,
+  'park': Icons.park,
+  'grass': Icons.grass,
+  'cafe': Icons.local_cafe,
+  'ball': Icons.sports_baseball,
+  'toy': Icons.toys,
+  'camera': Icons.camera_alt,
+  'food': Icons.restaurant,
+  'cut': Icons.content_cut,
+  'medical': Icons.medical_services,
+  'car': Icons.directions_car,
+  'hotel': Icons.hotel,
+  'heart': Icons.favorite,
+  'bag': Icons.shopping_bag,
 };
 
 /// アイコン名から IconData を引く（未登録の名前はデフォルトを返す）
 IconData categoryIconByName(String? name) =>
-    categoryIconChoices[name] ?? Icons.restaurant_menu;
+    categoryIconChoices[name] ?? Icons.pets;
 
 /// プロトタイプ用のモック現在地（本開発では端末の GPS + geohash に置き換える）
 class MockLocation {
@@ -86,6 +85,32 @@ const List<MockLocation> mockLocations = [
   MockLocation('shinagawa', '品川', 35.6285, 139.7394),
 ];
 
+/// 近くの公園・ドッグラン（「近くの公園を探す」機能）。
+/// プロトタイプでは anchor（現在地）からの相対距離で配置するモック。
+/// 本開発では Google Places API（dog_park / park）または
+/// OpenStreetMap（Overpass API）で置き換える。
+class DogPark {
+  final String id;
+  final String name;
+  final String type; // 'dogrun'（ドッグラン） | 'park'（犬OKの公園）
+  final String description;
+  final List<String> features; // 例: 'リードフリーエリア', '大型犬OK', '飲水場'
+  final double northKm;
+  final double eastKm;
+
+  const DogPark({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.description,
+    required this.features,
+    required this.northKm,
+    required this.eastKm,
+  });
+
+  bool get isDogRun => type == 'dogrun';
+}
+
 class AppUser {
   final String id;
   final String nickname;
@@ -98,7 +123,7 @@ class AppUser {
   final double lat;
   final double lng;
   final String? websiteUrl; // 公開URL（例: 店のホームページ）
-  final String? snsNote; // SNS（例: 'X: @meshitomo_official / IG: meshitomo'）
+  final String? snsNote; // SNS（例: 'X: @inutomo_official / IG: inutomo'）
   final String? phone; // ビジネスユーザー（店舗）の電話番号。タップで発信
 
   const AppUser({
@@ -145,7 +170,7 @@ class AppUser {
 
 /// ビジネスユーザー（店舗。一般ユーザー登録と分離された登録フローで作られる）
 class BusinessUser extends AppUser {
-  final String storeType; // 例: '居酒屋'
+  final String storeType; // 例: 'ドッグラン'
 
   const BusinessUser({
     required super.id,

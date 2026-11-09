@@ -4,16 +4,20 @@ import '../models.dart';
 import '../services/app_state.dart';
 
 /// 募集作成（FR-2-1）: ジャンル / タイトル / 本文 / 定員 / 期限 / 待ち合わせ
-Future<void> showRecruitmentCreateSheet(BuildContext context) {
+/// [initialMeetup] に公園名などを渡すと待ち合わせの初期値になる。
+Future<void> showRecruitmentCreateSheet(BuildContext context,
+    {String? initialMeetup}) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    builder: (_) => const _CreateSheet(),
+    builder: (_) => _CreateSheet(initialMeetup: initialMeetup),
   );
 }
 
 class _CreateSheet extends StatefulWidget {
-  const _CreateSheet();
+  const _CreateSheet({this.initialMeetup});
+
+  final String? initialMeetup;
 
   @override
   State<_CreateSheet> createState() => _CreateSheetState();
@@ -32,8 +36,8 @@ class _CreateSheetState extends State<_CreateSheet> {
     super.initState();
     _title = TextEditingController();
     _body = TextEditingController();
-    _meetup = TextEditingController();
-    _genreId = 'meshi';
+    _meetup = TextEditingController(text: widget.initialMeetup ?? '');
+    _genreId = 'sanpo';
   }
 
   @override
@@ -127,7 +131,7 @@ class _CreateSheetState extends State<_CreateSheet> {
               maxLength: 40,
               decoration: const InputDecoration(
                 labelText: 'タイトル',
-                hintText: '例: 今夜19時、神田でラーメンどうですか',
+                hintText: '例: 今から夕方の公園でお散歩しませんか',
                 border: OutlineInputBorder(),
                 counterText: '',
               ),
@@ -139,7 +143,7 @@ class _CreateSheetState extends State<_CreateSheet> {
               maxLength: 200,
               decoration: const InputDecoration(
                 labelText: '内容',
-                hintText: 'ひとり参加歓迎、初心者 OK、食後即解散可 など',
+                hintText: '犬種・ワンちゃんの様子、初心者歓迎、大型犬同伴 OK など',
                 border: OutlineInputBorder(),
               ),
             ),

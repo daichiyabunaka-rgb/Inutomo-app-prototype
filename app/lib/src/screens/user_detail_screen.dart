@@ -7,7 +7,7 @@ import 'chat_screen.dart';
 import 'widgets.dart';
 
 /// ユーザー詳細（プロフィール閲覧 + DM の起点）。
-/// 出会い系ではなく飯とも候補として見る画面なので、募集や嗜好を主に表示する。
+/// 出会い系ではなく犬とも候補として見る画面なので、募集や嗜好を主に表示する。
 /// SNS・URLは本人がプロフィールで公開したものだけ表示する。
 class UserDetailScreen extends StatelessWidget {
   const UserDetailScreen({super.key, required this.userId});

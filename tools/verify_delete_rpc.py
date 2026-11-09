@@ -7,7 +7,7 @@ import urllib.request
 BASE = "https://jkctwrphqomfetrlrsem.supabase.co"
 PUBLISHABLE = "sb_publishable_xIVCNhG1LQrued-VRlbuww_NnyYUi3_"
 SECRET = os.environ["SUPA_SECRET"]
-EMAIL = f"meshitomo-del-{int(time.time())}@example-test.com"
+EMAIL = f"inutomo-del-{int(time.time())}@example-test.com"
 PASSWORD = "DelProbe123!@"
 
 

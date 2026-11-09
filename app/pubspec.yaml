@@ -1,5 +1,5 @@
-name: meshitomo
-description: "飯とも！ - 趣味でつながる飯とも探しアプリ（プロトタイプ）"
+name: inutomo
+description: "犬とも！ - 飼い主さん同士でつながる犬とも探しアプリ（プロトタイプ）"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -77,7 +77,7 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/icon/app_icon.png"
-  adaptive_icon_background: "#C92A0A"
+  adaptive_icon_background: "#795548"
   adaptive_icon_foreground: "assets/icon/app_icon.png"
 
   # To add assets to your application, add an assets section, like this:

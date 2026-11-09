@@ -69,10 +69,10 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.restaurant_menu,
+                Icon(Icons.pets,
                     size: 64, color: theme.colorScheme.primary),
                 const SizedBox(height: 12),
-                Text('飯とも！',
+                Text('犬とも！',
                     style: theme.textTheme.headlineLarge!
                         .copyWith(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
@@ -203,9 +203,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SizedBox(height: 4),
           Text(
             _role == 'business'
-                ? '飲食店など店舗情報を登録し、地図連携・DM・電話対応を利用します'
+                ? 'ドッグラン・ペットサロンなど店舗情報を登録し、地図連携・DM・電話対応を利用します'
                   '（AI接客は本リリース後に提供予定）。ベータ期間中は無料です'
-                : '趣味で近くの飯ともを探します。完全無料です',
+                : 'ワンちゃんと一緒に、近くの犬ともを探します。完全無料です',
             style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 12),

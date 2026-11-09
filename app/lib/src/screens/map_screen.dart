@@ -108,7 +108,7 @@ class _OsmMapBody extends StatelessWidget {
       children: [
         TileLayer(
           urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.meshitomo.meshitomo',
+          userAgentPackageName: 'com.inutomo.inutomo',
         ),
         MarkerLayer(
           markers: [

@@ -1,11 +1,11 @@
 {
-    "name": "meshitomo",
-    "short_name": "meshitomo",
+    "name": "犬とも！",
+    "short_name": "犬とも！",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#6D4C41",
+    "theme_color": "#6D4C41",
+    "description": "飼い主さん同士でつながる犬とも探しアプリ（プロトタイプ）",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

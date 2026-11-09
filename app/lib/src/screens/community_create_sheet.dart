@@ -109,7 +109,7 @@ class _CommunityCreateSheetState extends State<_CommunityCreateSheet> {
               maxLength: 30,
               decoration: const InputDecoration(
                 labelText: 'コミュニティ名',
-                hintText: '例: ラーメン部 / のれん常連会',
+                hintText: '例: 柴犬オフ会 / わんぷらざ常連会',
                 border: OutlineInputBorder(),
                 counterText: '',
               ),

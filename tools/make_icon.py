@@ -1,7 +1,7 @@
 """ランチャーアイコン（1024px）を生成するワンオフスクリプト。
-飯とも！: 深オレンジの丸角背景 + 白い丼と箸、湯気。「顔ではなく趣味」のコンセプト。
+犬とも！: ブラウンのグラデーション背景 + 白い肉球（爪4本+メインパッド）。
+「顔ではなくワンちゃん」のコンセプト。
 """
-import math
 from PIL import Image, ImageDraw
 
 SIZE = 1024
@@ -10,9 +10,9 @@ d = ImageDraw.Draw(img)
 
 bg = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
 bd = ImageDraw.Draw(bg)
-# 上→下のグラデーション (#F76707 -> #C92A0A 相当)
-top = (247, 103, 7)
-bottom = (201, 42, 10)
+# 上→下のグラデーション (#BCAAA4 -> #6D4C41 相当)
+top = (188, 170, 164)
+bottom = (109, 76, 65)
 for y in range(SIZE):
     t = y / (SIZE - 1)
     r = int(top[0] + (bottom[0] - top[0]) * t)
@@ -25,23 +25,21 @@ md = ImageDraw.Draw(mask)
 md.rounded_rectangle([0, 0, SIZE - 1, SIZE - 1], radius=210, fill=255)
 img.paste(bg, (0, 0), mask)
 
-# 丼（下部半楕円 + 縁）
 white = (255, 255, 255, 255)
-d.pieslice([128, 330, 896, 930], 0, 180, fill=white)
-d.rounded_rectangle([104, 566, 920, 640], radius=37, fill=white)
-# 丼の飾り線（中央帯）
-d.pieslice([128, 330, 896, 930], 0, 180, outline=(247, 103, 7, 255), width=0)
 
-# 箸（右上へ2本）
-chopstick_color = (255, 236, 210, 255)
-for dx in (0, 46):
-    d.line([(430 + dx, 500), (820 + dx, 130)], fill=chopstick_color, width=34)
-    d.ellipse([820 + dx - 17, 113, 820 + dx + 17, 147], fill=chopstick_color)
+# メインパッド（下に大きい、やや縦長の楕円）
+d.ellipse([262, 480, 762, 872], fill=white)
 
-# 湯気（3本の弧）
-steam = (255, 255, 255, 200)
-for sx in (300, 420, 540):
-    d.arc([sx - 60, 150, sx + 60, 330], start=250, end=8, fill=steam, width=22)
+# 上の爪4本（円弧上に配置）
+toes = [
+    (362, 380),  # 左外
+    (462, 316),  # 左内
+    (562, 316),  # 右内
+    (662, 380),  # 右外
+]
+sizes = [(116, 132), (100, 118), (100, 118), (116, 132)]
+for (cx, cy), (w, h) in zip(toes, sizes):
+    d.ellipse([cx - w // 2, cy - h // 2, cx + w // 2, cy + h // 2], fill=white)
 
 img.save("app_icon.png")
 print("saved app_icon.png")

@@ -15,8 +15,8 @@ import 'app_config.dart';
 /// - モックモード（未指定）: 端末内の簡易認証（SharedPreferences）
 /// どちらも画面側は同じ API を使う。
 class AuthService extends ChangeNotifier {
-  static const _kAccounts = 'meshitomo_accounts';
-  static const _kSession = 'meshitomo_session';
+  static const _kAccounts = 'inutomo_accounts';
+  static const _kSession = 'inutomo_session';
 
   final Map<String, _Account> _accounts = {}; // モック用: key = email(小文字)
   String? _sessionEmail; // モック用
@@ -250,7 +250,7 @@ class AuthService extends ChangeNotifier {
           'birth_decade': '非公開',
           'gender': 'undisclosed',
           'role': 'general',
-          'icon_category_id': 'ramen',
+          'icon_category_id': 'sanpo',
           'interest_ids': const <String>[],
           'bio': '',
         });
@@ -263,7 +263,7 @@ class AuthService extends ChangeNotifier {
         'decade': (_profileCache['birth_decade'] as String?) ?? '非公開',
         'gender': (_profileCache['gender'] as String?) ?? 'undisclosed',
         'iconCategoryId':
-            (_profileCache['icon_category_id'] as String?) ?? 'ramen',
+            (_profileCache['icon_category_id'] as String?) ?? 'sanpo',
         'interestIds':
             ((_profileCache['interest_ids'] as List?) ?? const []).cast<String>(),
         'bio': (_profileCache['bio'] as String?) ?? '',
@@ -489,7 +489,7 @@ class AuthService extends ChangeNotifier {
 
   String _mockHash(String email, String password) {
     final digest =
-        sha256.convert(utf8.encode('meshitomo-v1:$email:$password'));
+        sha256.convert(utf8.encode('inutomo-v1:$email:$password'));
     return digest.toString();
   }
 

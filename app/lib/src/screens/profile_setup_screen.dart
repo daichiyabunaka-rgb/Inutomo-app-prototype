@@ -35,8 +35,8 @@ class ProfileSetupScreen extends StatefulWidget {
 }
 
 const List<String> storeTypes = [
-  '居酒屋', 'ラーメン店', '焼肉店', 'カフェ', 'そば・うどん',
-  '寿司', 'イタリアン', '中華', 'その他',
+  'ドッグラン', 'ドッグカフェ', 'ペットサロン・トリミング', '動物病院',
+  'ペットホテル', 'しつけ教室', 'ペット用品店', '保護犬・譲渡会運営', 'その他',
 ];
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
@@ -71,8 +71,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     _phone = TextEditingController(text: e?.phone ?? '');
     _decade = _isBusiness ? '経営者' : (e?.decade ?? '20代');
     _gender = e?.gender ?? 'undisclosed';
-    _iconCategory = e?.iconCategoryId ?? 'izakaya';
-    _storeType = b?.storeType ?? '居酒屋';
+    _iconCategory = e?.iconCategoryId ?? 'sanpo';
+    _storeType = b?.storeType ?? 'ドッグラン';
     _interests = <String>{...?e?.interestIds};
     _iconImagePath = (e?.iconImagePath?.isNotEmpty ?? false)
         ? e!.iconImagePath
@@ -211,7 +211,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           TextField(
             controller: _nickname,
             decoration: InputDecoration(
-              hintText: _isBusiness ? '例: 居酒屋 のれん' : '例: 麺活さとる',
+              hintText: _isBusiness ? '例: ドッグラン わんぷらざ' : '例: 柴犬のもくのパパ',
               border: const OutlineInputBorder(),
               counterText: '',
             ),
@@ -278,8 +278,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           Text('アイコン', style: theme.textTheme.titleSmall),
           const SizedBox(height: 4),
           Text(
-            '料理や店の写真など、趣味に関係する画像を投稿できます。'
-            '顔が写った画像は使用できません（本開発では AI 審査で自動拒否します）。',
+            '愛犬の写真やお散歩風景など、犬に関係する画像を投稿できます。'
+            '飼い主さま本人の顔が写った画像は使用できません'
+            '（本開発では AI 審査で自動拒否します）。',
             style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 12),
@@ -405,10 +406,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Text('自己紹介（飯ともステータス）', style: theme.textTheme.titleSmall),
+          Text('自己紹介（犬ともステータス）', style: theme.textTheme.titleSmall),
           const SizedBox(height: 4),
           Text(
-            '好きなもの、苦手なもの、どういう時に誘いたいか等。中身で選んでもらうための情報です。',
+            'ワンちゃんの犬種・性格、どんな遊び方をしたいか等。'
+            '中身で選んでもらうための情報です。',
             style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 8),
@@ -418,9 +420,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             maxLength: 140,
             decoration: InputDecoration(
               hintText: _isBusiness
-                  ? '例: 常連さんが集まる小さな居酒屋。ひとり飲みも大歓迎。'
-                  : '例: 平日夜のラーメンと土曜のブランチが好き。'
-                    'ひとり飯もするけど、同じ趣味の人と行くと倍くらい美味しい。',
+                  ? '例: 小型犬・大型犬エリアが分かれたドッグラン。初めての子もゆっくり慣らせます。'
+                  : '例: 柴犬のもく（4歳）と朝昼夜の散歩が日課。'
+                    '休日はドッグラン遠征中。犬友達を探しています。',
               border: const OutlineInputBorder(),
             ),
           ),
@@ -447,7 +449,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             controller: _sns,
             decoration: const InputDecoration(
               labelText: 'SNS',
-              hintText: '例: X: @meshitomo / IG: meshitomo',
+              hintText: '例: X: @inutomo / IG: inutomo',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.alternate_email),
             ),
@@ -465,7 +467,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       isScrollControlled: true,
       builder: (sheetContext) {
         final nameController = TextEditingController();
-        var selectedIcon = 'restaurant';
+        var selectedIcon = 'pets';
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) => Padding(
             padding: EdgeInsets.only(
@@ -483,7 +485,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           .copyWith(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Text(
-                      '飲食に関するカテゴリを自由に追加できます'
+                      '犬に関するカテゴリを自由に追加できます'
                       '（追加したカテゴリは全ユーザーで共有されます）',
                       style: Theme.of(sheetContext).textTheme.bodySmall),
                   const SizedBox(height: 16),
@@ -492,7 +494,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     maxLength: 20,
                     decoration: const InputDecoration(
                       labelText: 'カテゴリ名',
-                      hintText: '例: 珈琲巡り / 釣り / サウナ',
+                      hintText: '例: 柴犬部 / フリスビー / ドッグフード研究',
                       border: OutlineInputBorder(),
                       counterText: '',
                     ),
