@@ -460,119 +460,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
   }
 
-  /// カテゴリ追加シート: 名前 + アイコンを選んで新カテゴリを作る
+  /// カテゴリ追加シート: 名前 + アイコンを選んで新カテゴリを作る。
+  /// シート本体は StatefulWidget（コントローラと選択状態をシートの
+  /// State が持つ。builder 内で作り直すとキーボード開閉の再構築で
+  /// 入力中のフォーカスと文章が消えるため）。
   Future<void> _showAddCategorySheet(BuildContext context) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      builder: (sheetContext) {
-        final nameController = TextEditingController();
-        var selectedIcon = 'pets';
-        return StatefulBuilder(
-          builder: (sheetContext, setSheetState) => Padding(
-            padding: EdgeInsets.only(
-                bottom: MediaQuery.of(sheetContext).viewInsets.bottom),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('カテゴリを追加',
-                      style: Theme.of(sheetContext)
-                          .textTheme
-                          .titleLarge!
-                          .copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text(
-                      '犬に関するカテゴリを自由に追加できます'
-                      '（追加したカテゴリは全ユーザーで共有されます）',
-                      style: Theme.of(sheetContext).textTheme.bodySmall),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: nameController,
-                    maxLength: 20,
-                    decoration: const InputDecoration(
-                      labelText: 'カテゴリ名',
-                      hintText: '例: 柴犬部 / フリスビー / ドッグフード研究',
-                      border: OutlineInputBorder(),
-                      counterText: '',
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text('アイコン',
-                      style: Theme.of(sheetContext).textTheme.titleSmall),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      for (final entry in categoryIconChoices.entries)
-                        InkWell(
-                          onTap: () => setSheetState(
-                              () => selectedIcon = entry.key),
-                          customBorder: const CircleBorder(),
-                          child: Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: selectedIcon == entry.key
-                                  ? Theme.of(sheetContext)
-                                      .colorScheme
-                                      .primaryContainer
-                                  : Colors.grey.shade200,
-                              border: selectedIcon == entry.key
-                                  ? Border.all(
-                                      color: Theme.of(sheetContext)
-                                          .colorScheme
-                                          .primary,
-                                      width: 3)
-                                  : null,
-                            ),
-                            child: Icon(entry.value, size: 24),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: () async {
-                        final created = await appState.addCategory(
-                          label: nameController.text,
-                          iconName: selectedIcon,
-                        );
-                        if (sheetContext.mounted) {
-                          Navigator.of(sheetContext).pop();
-                        }
-                        if (created != null) {
-                          setState(() => _interests.add(created.id));
-                        } else {
-                          if (sheetContext.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content:
-                                    Text('同じ名前のカテゴリが既にあります'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        }
-                      },
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        child: Text('追加する'),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+      builder: (_) => _AddCategorySheet(
+        onCreated: (id) => setState(() => _interests.add(id)),
+      ),
     );
   }
 
@@ -608,6 +506,129 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         color: theme.colorScheme.primaryContainer,
       ),
       child: Center(child: preview),
+    );
+  }
+}
+
+/// カテゴリ追加シート本体。コントローラ・選択中アイコンはここで保持する。
+class _AddCategorySheet extends StatefulWidget {
+  const _AddCategorySheet({required this.onCreated});
+
+  final ValueChanged<String> onCreated;
+
+  @override
+  State<_AddCategorySheet> createState() => _AddCategorySheetState();
+}
+
+class _AddCategorySheetState extends State<_AddCategorySheet> {
+  final TextEditingController _name = TextEditingController();
+  String _selectedIcon = 'pets';
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (_name.text.trim().isEmpty || _submitting) return;
+    setState(() => _submitting = true);
+    final created = await appState.addCategory(
+      label: _name.text,
+      iconName: _selectedIcon,
+    );
+    if (!mounted) return;
+    if (created != null) {
+      widget.onCreated(created.id);
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() => _submitting = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('同じ名前のカテゴリが既にあります'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('カテゴリを追加',
+                style: theme.textTheme.titleLarge!
+                    .copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(
+                '犬に関するカテゴリを自由に追加できます'
+                '（追加したカテゴリは全ユーザーで共有されます）',
+                style: theme.textTheme.bodySmall),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _name,
+              maxLength: 20,
+              decoration: const InputDecoration(
+                labelText: 'カテゴリ名',
+                hintText: '例: 柴犬部 / フリスビー / ドッグフード研究',
+                border: OutlineInputBorder(),
+                counterText: '',
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text('アイコン', style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (final entry in categoryIconChoices.entries)
+                  InkWell(
+                    onTap: () =>
+                        setState(() => _selectedIcon = entry.key),
+                    customBorder: const CircleBorder(),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _selectedIcon == entry.key
+                            ? theme.colorScheme.primaryContainer
+                            : Colors.grey.shade200,
+                        border: _selectedIcon == entry.key
+                            ? Border.all(
+                                color: theme.colorScheme.primary,
+                                width: 3)
+                            : null,
+                      ),
+                      child: Icon(entry.value, size: 24),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: _submit,
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14),
+                  child: Text('追加する'),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
