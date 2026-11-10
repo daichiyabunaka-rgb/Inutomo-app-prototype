@@ -8,7 +8,7 @@ import 'user_detail_screen.dart';
 import 'widgets.dart';
 import 'protected_dog_create_sheet.dart';
 
-/// 「保護犬・迷子犬」画面: 見つけて保護したワンちゃん・いなくなったワンちゃんの
+/// 「保護犬・迷子犬」タブ: 見つけて保護したワンちゃん・いなくなったワンちゃんの
 /// 情報を近隣で共有する（FR-7-1〜7-4）。
 /// 譲渡・里親探しは本アプリでは行わず、自治体・保護団体の正式な手続きへ誘導する。
 class ProtectedDogsPage extends StatefulWidget {
@@ -25,72 +25,82 @@ class _ProtectedDogsPageState extends State<ProtectedDogsPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('保護犬・迷子犬')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => showProtectedDogCreateSheet(context),
         icon: const Icon(Icons.pets),
         label: const Text('登録する'),
       ),
-      body: ListenableBuilder(
-        listenable: appState,
-        builder: (context, _) {
-          final all = appState.protectedDogs;
-          final dogs = _filter == 'all'
-              ? all
-              : all
-                  .where((p) => _filter == 'protected' ? p.isProtected : p.isLost)
-                  .toList();
-          return RefreshIndicator(
-            onRefresh: () => appState.refreshFromRemote(),
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              children: [
-                SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(
-                        value: 'all', label: Text('すべて')),
-                    ButtonSegment(
-                        value: 'protected', label: Text('保護')),
-                    ButtonSegment(value: 'lost', label: Text('迷子')),
-                  ],
-                  selected: {_filter},
-                  onSelectionChanged: (s) =>
-                      setState(() => _filter = s.first),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '近くで登録された情報を近い順に表示します。'
-                  '見つけたワンちゃん・いなくなったワンちゃんの情報を登録して、'
-                  '飼い主さんとの再会につなげましょう。',
-                  style: theme.textTheme.bodySmall,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '※保護したワンちゃんは、お住まいの自治体（保健所等）への'
-                  '届け出が動物愛護法で義務付けられています。'
-                  '譲渡・里親探しは、自治体や保護団体の正式な手続で行ってください。',
-                  style: theme.textTheme.labelSmall!
-                      .copyWith(color: Colors.grey.shade600),
-                ),
-                if (dogs.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.all(32),
-                    child: Center(
-                      child: Text(
-                        '近くに登録はまだありません。\n'
-                        '「登録する」から最初の登録をお願いします。',
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodySmall,
-                      ),
+      body: SafeArea(
+        child: ListenableBuilder(
+          listenable: appState,
+          builder: (context, _) {
+            final all = appState.protectedDogs;
+            final dogs = _filter == 'all'
+                ? all
+                : all
+                      .where(
+                        (p) =>
+                            _filter == 'protected' ? p.isProtected : p.isLost,
+                      )
+                      .toList();
+            return RefreshIndicator(
+              onRefresh: () => appState.refreshFromRemote(),
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Text(
+                    '保護犬・迷子犬',
+                    style: theme.textTheme.titleLarge!.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                for (final d in dogs) _dogCard(context, d),
-                const SizedBox(height: 80),
-              ],
-            ),
-          );
-        },
+                  const SizedBox(height: 8),
+                  SegmentedButton<String>(
+                    segments: const [
+                      ButtonSegment(value: 'all', label: Text('すべて')),
+                      ButtonSegment(value: 'protected', label: Text('保護')),
+                      ButtonSegment(value: 'lost', label: Text('迷子')),
+                    ],
+                    selected: {_filter},
+                    onSelectionChanged: (s) =>
+                        setState(() => _filter = s.first),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '近くで登録された情報を近い順に表示します。'
+                    '見つけたワンちゃん・いなくなったワンちゃんの情報を登録して、'
+                    '飼い主さんとの再会につなげましょう。',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '※保護したワンちゃんは、お住まいの自治体（保健所等）への'
+                    '届け出が動物愛護法で義務付けられています。'
+                    '譲渡・里親探しは、自治体や保護団体の正式な手続で行ってください。',
+                    style: theme.textTheme.labelSmall!.copyWith(
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  if (dogs.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Center(
+                        child: Text(
+                          '近くに登録はまだありません。\n'
+                          '「登録する」から最初の登録をお願いします。',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ),
+                    ),
+                  for (final d in dogs) _dogCard(context, d),
+                  const SizedBox(height: 80),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -113,8 +123,10 @@ class _ProtectedDogsPageState extends State<ProtectedDogsPage> {
             Row(
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: d.isProtected
                         ? Colors.teal.shade50
@@ -135,8 +147,9 @@ class _ProtectedDogsPageState extends State<ProtectedDogsPage> {
                 Expanded(
                   child: Text(
                     d.dogDescription,
-                    style: theme.textTheme.titleSmall!
-                        .copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleSmall!.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -202,8 +215,7 @@ class _ProtectedDogsPageState extends State<ProtectedDogsPage> {
                 else
                   FilledButton.tonalIcon(
                     icon: const Icon(Icons.chat_bubble_outline, size: 18),
-                    label:
-                        const Text('この人にDM', style: TextStyle(fontSize: 13)),
+                    label: const Text('この人にDM', style: TextStyle(fontSize: 13)),
                     onPressed: () async {
                       final room = await appState.getOrCreateDm(reporter.id);
                       if (!context.mounted) return;
@@ -228,8 +240,9 @@ class _ProtectedDogsPageState extends State<ProtectedDogsPage> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('解決済みにしますか？'),
         content: const Text(
-            '飼い主さんと再会した、保護先へ引き取られた等、解決した場合に'
-            '設定します。解決済みの登録は一覧から表示されなくなります。'),
+          '飼い主さんと再会した、保護先へ引き取られた等、解決した場合に'
+          '設定します。解決済みの登録は一覧から表示されなくなります。',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
