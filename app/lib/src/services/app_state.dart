@@ -270,11 +270,19 @@ class AppState extends ChangeNotifier {
         .toList();
   }
 
+  /// リリース（ベータ配布）ビルドではモックデータを出さない。
+  /// モックの一般ユーザー・店舗・シード募集・シードコミュニティ・
+  /// シードの保護犬/迷子犬は開発・テスト（デバッグ）ビルドのみ。
+  bool get _useMockData => !kReleaseMode;
+
   void _rebuildMockUsers() {
+    _users.clear();
+    if (me != null) {
+      _users[me!.id] = me!;
+    }
+    if (!_useMockData) return;
     final users = buildMockUsers(anchorLat, anchorLng);
-    _users
-      ..clear()
-      ..addEntries(users.map((u) => MapEntry(u.id, u)));
+    _users.addEntries(users.map((u) => MapEntry(u.id, u)));
     if (me != null) {
       _users[me!.id] = me!;
     }
@@ -313,12 +321,14 @@ class AppState extends ChangeNotifier {
       _seeded = true;
     } else if (reseed || !_seeded) {
       _recruitments.clear();
-      _recruitments.addAll(seedRecruitments(_now(), _users.values
-          .where((u) => u.id != me!.id && !u.isBusiness)
-          .toList()));
+      if (_useMockData) {
+        _recruitments.addAll(seedRecruitments(_now(), _users.values
+            .where((u) => u.id != me!.id && !u.isBusiness)
+            .toList()));
+        _seedMockCommunities();
+        _seedMockProtectedDogs();
+      }
       _seeded = true;
-      _seedMockCommunities();
-      _seedMockProtectedDogs();
     }
     notifyListeners();
   }
@@ -1265,9 +1275,9 @@ class AppState extends ChangeNotifier {
     _protectedDogs.addAll(buildSeedProtectedDogs(_now(), anchorLat, anchorLng));
   }
 
-  /// 実 GPS で現在地が変わったら、シードの投稿も作り直す
+  /// 実 GPS で現在地が変わったら、シードの投稿も作り直す（開発ビルドのみ）
   void _replaceMockProtectedDogSeeds() {
-    if (_remote) return;
+    if (_remote || !_useMockData) return;
     _protectedDogs.removeWhere((p) => p.id.startsWith('pd-seed-'));
     _protectedDogs.addAll(buildSeedProtectedDogs(_now(), anchorLat, anchorLng));
   }
