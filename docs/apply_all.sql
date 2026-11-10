@@ -277,7 +277,7 @@ as $$
 declare
   v_room uuid;
 begin
-  select room_id into v_room
+  select a.room_id into v_room
   from public.chat_room_members a
   join public.chat_rooms c on c.id = a.room_id and c.type = 'dm'
   join public.chat_room_members b on b.room_id = a.room_id
