@@ -160,6 +160,7 @@ alter table public.chat_rooms enable row level security;
 create policy "部屋はメンバー・コミュニティ参加者が閲覧" on public.chat_rooms
   for select using (
     public.is_room_member(chat_rooms.id)
+    or public.is_recruitment_host(chat_rooms.id)
     or (
       chat_rooms.community_id is not null
       and exists (
