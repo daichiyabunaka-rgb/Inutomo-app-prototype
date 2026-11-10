@@ -8,34 +8,42 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app_config.dart';
 
 /// 画像の取得と保存（アイコン・保護犬/迷子犬の投稿写真など）。
-/// - モックモード: ギャラリー/カメラの画像をアプリ専用領域にコピーして永続化
-/// - Supabase モード: さらに Storage の公開バケット `bucket/<uuid>/` へ
-///   アップロードし、公開URLを返す（これにより他のユーザーにも画像が見える）
+/// - すべての画像は指定サイズに自動リサイズされ、JPEG品質を下げて
+///   ファイル容量を抑える（ベータ: アイコン 400px/品質70、投稿写真 800px/品質70）
+/// - モックモード: リサイズ済み画像をアプリ専用領域に保存
+/// - Supabase モード: Storage の公開バケットへアップロードし公開URLを返す
 /// アップロードに失敗した場合は端末内パスにフォールバックする。
 class IconService {
-  /// アイコン画像（600px四方に収める）
+  /// アイコン画像（400px四方・品質70。プロフィール表示に十分）
   Future<String?> pickAndSave(ImageSource source) {
     return _pickAndSave(
       source,
       subDir: 'icons',
       prefix: 'icon',
       bucket: 'icons',
-      maxWidth: 600,
-      maxHeight: 600,
+      maxWidth: 400,
+      maxHeight: 400,
+      imageQuality: 70,
     );
   }
 
-  /// 保護犬・迷子犬の投稿写真（大きめに保存し、伝わりやすくする）
+  /// 保護犬・迷子犬の投稿写真（800px・品質70。十分伝わり、容量は1/10以下）
   Future<String?> pickProtectedDogPhoto(ImageSource source) {
     return _pickAndSave(
       source,
       subDir: 'dog_photos',
       prefix: 'dog_photo',
       bucket: 'protected-dog-photos',
-      maxWidth: 1080,
-      maxHeight: 1080,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 70,
     );
   }
+
+  /// アップロードするファイルの上限（KB）。超える場合は警告ログのみ
+  /// （image_picker のリサイズでほぼ確実に収まるが、稀に端末によって
+  ///  圧縮が効かないケースがあるため保険として設ける）
+  static const int maxUploadKb = 512;
 
   Future<String?> _pickAndSave(
     ImageSource source, {
@@ -44,13 +52,14 @@ class IconService {
     required String bucket,
     double? maxWidth,
     double? maxHeight,
+    int imageQuality = 70,
   }) async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
       source: source,
       maxWidth: maxWidth,
       maxHeight: maxHeight,
-      imageQuality: 80,
+      imageQuality: imageQuality,
     );
     if (picked == null) return null;
     final dir = await getApplicationDocumentsDirectory();
@@ -63,6 +72,12 @@ class IconService {
     final dest =
         '${targetDir.path}${Platform.pathSeparator}${prefix}_$ts.jpg';
     File(picked.path).copySync(dest);
+
+    // 容量チェック（超過時はログのみ。image_picker の圧縮で通常は問題ない）
+    final sizeKb = File(dest).lengthSync() ~/ 1024;
+    if (sizeKb > maxUploadKb) {
+      debugPrint('$prefix: file size ${sizeKb}KB > ${maxUploadKb}KB');
+    }
 
     if (AppConfig.useSupabase) {
       try {
