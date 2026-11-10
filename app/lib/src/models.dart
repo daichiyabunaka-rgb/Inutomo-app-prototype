@@ -86,26 +86,30 @@ const List<MockLocation> mockLocations = [
 ];
 
 /// 近くの公園・ドッグラン（「近くの公園を探す」機能）。
-/// プロトタイプでは anchor（現在地）からの相対距離で配置するモック。
-/// 本開発では Google Places API（dog_park / park）または
-/// OpenStreetMap（Overpass API）で置き換える。
+/// 実データは OpenStreetMap（Overpass API）から現在地周辺で取得する。
+/// 有料（fee=yes）のドッグランは一覧から除外する。
 class DogPark {
-  final String id;
+  final String osmId; // 例: 'way/12345'
   final String name;
-  final String type; // 'dogrun'（ドッグラン） | 'park'（犬OKの公園）
-  final String description;
-  final List<String> features; // 例: 'リードフリーエリア', '大型犬OK', '飲水場'
-  final double northKm;
-  final double eastKm;
+  final String type; // 'dogrun'（ドッグラン） | 'park'（公園）
+  final double lat;
+  final double lng;
+  final double distanceKm; // 現在地からの距離
+  final String dogRule; // 'yes' | 'leashed' | 'no' | 'unknown'
+  final bool
+      feeFreeKnown; // fee タグで無料と明記されているか（ドッグラン表示用）
+  final String? openingHours;
 
   const DogPark({
-    required this.id,
+    required this.osmId,
     required this.name,
     required this.type,
-    required this.description,
-    required this.features,
-    required this.northKm,
-    required this.eastKm,
+    required this.lat,
+    required this.lng,
+    required this.distanceKm,
+    this.dogRule = 'unknown',
+    this.feeFreeKnown = false,
+    this.openingHours,
   });
 
   bool get isDogRun => type == 'dogrun';
