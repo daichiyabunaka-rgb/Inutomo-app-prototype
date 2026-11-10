@@ -19,9 +19,15 @@ class CommunitiesPage extends StatelessWidget {
         child: ListenableBuilder(
           listenable: appState,
           builder: (context, _) {
-            final mine = appState.myCommunities;
+            final mine = appState.myCommunities
+              ..sort((a, b) => appState
+                  .communityDistanceKm(a)
+                  .compareTo(appState.communityDistanceKm(b)));
             final others =
-                appState.communities.where((c) => !mine.contains(c)).toList();
+                appState.communities.where((c) => !mine.contains(c)).toList()
+                  ..sort((a, b) => appState
+                      .communityDistanceKm(a)
+                      .compareTo(appState.communityDistanceKm(b)));
             return RefreshIndicator(
               onRefresh: () => appState.refreshCommunities(),
               child: ListView(
@@ -88,7 +94,8 @@ class CommunitiesPage extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
-          '${c.memberIds.length}人参加 / 主催: ${owner.nickname}',
+          '${c.memberIds.length}人参加 / 主催: ${owner.nickname}'
+          ' / ${appState.communityDistanceLabel(c)}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -98,14 +105,14 @@ class CommunitiesPage extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
+                  color: Colors.brown.shade50,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.orange.shade200),
+                  border: Border.all(color: Colors.brown.shade200),
                 ),
                 child: Text(
                   '参加',
                   style: TextStyle(
-                      fontSize: 11, color: Colors.orange.shade900),
+                      fontSize: 11, color: Colors.brown.shade800),
                 ),
               ),
         onTap: () => Navigator.of(context).push(

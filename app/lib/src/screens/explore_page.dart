@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import '../models.dart';
 import '../services/app_state.dart';
 import '../util/format.dart';
+import 'community_detail_screen.dart';
+import 'store_sheet.dart';
 import 'user_detail_screen.dart';
 import 'widgets.dart';
 
-/// 「探す」タブ: カテゴリで近くの人を探す（FR-2-4）。
-/// コミュニティ・店舗・クーポンは v1.5/v2 で追加される位置のプレビューを表示。
+/// 「探す」タブ: カテゴリで近くの人を探し、店舗・コミュニティも探せる
+/// （FR-2-3, FR-2-4, FR-5-3, FR-6-1〜6-3）。
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
 
@@ -17,6 +19,13 @@ class ExplorePage extends StatefulWidget {
 
 class _ExplorePageState extends State<ExplorePage> {
   String? _selectedCategory;
+  final TextEditingController _storeSearch = TextEditingController();
+
+  @override
+  void dispose() {
+    _storeSearch.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +45,18 @@ class _ExplorePageState extends State<ExplorePage> {
                 final db = _distanceKm(b);
                 return da.compareTo(db);
               });
+            final stores = appState.businessUsers
+              ..sort((a, b) => _distanceKm(a).compareTo(_distanceKm(b)));
+            final storeKeyword = _storeSearch.text.trim().toLowerCase();
+            final filteredStores = storeKeyword.isEmpty
+                ? stores
+                : stores
+                    .where((s) =>
+                        s.nickname.toLowerCase().contains(storeKeyword) ||
+                        s.storeType.toLowerCase().contains(storeKeyword) ||
+                        s.bio.toLowerCase().contains(storeKeyword))
+                    .toList();
+            final communities = appState.nearbyCommunities;
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -90,62 +111,151 @@ class _ExplorePageState extends State<ExplorePage> {
                     ),
                   ),
                 const SizedBox(height: 24),
-                Card(
-                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.storefront,
-                                color: theme.colorScheme.primary),
-                            const SizedBox(width: 8),
-                            Text('ドッグランやサロンを探す（v1.5で追加）',
-                                style: theme.textTheme.titleSmall),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'ビジネスユーザー（ドッグラン、ペットサロン、動物病院など）が店舗を登録し、'
-                          '地図連携（マップ表示・Googleマップで開く）や'
-                          'お店へのDM・電話連絡をご利用いただけます。'
-                          'ベータ期間中は無料です（AI接客は準備中）。',
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
+
+                // ------------------------------------------- 店を探す
+                Row(
+                  children: [
+                    Icon(Icons.storefront,
+                        size: 20, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text('ドッグランやサロンを探す',
+                        style: theme.textTheme.titleSmall),
+                    const SizedBox(width: 8),
+                    Text('（${filteredStores.length}件）',
+                        style: theme.textTheme.bodySmall),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _storeSearch,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: '店名・業態で検索',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 10),
+                    isDense: true,
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                    suffixIcon: storeKeyword.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _storeSearch.clear();
+                              setState(() {});
+                            },
+                          ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Card(
-                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.groups,
-                                color: theme.colorScheme.primary),
-                            const SizedBox(width: 8),
-                            Text('コミュニティ・イベント（v2で追加）',
-                                style: theme.textTheme.titleSmall),
-                          ],
+                const SizedBox(height: 8),
+                if (filteredStores.isEmpty)
+                  Text(
+                    '近くに登録された店舗はまだありません。'
+                    'ビジネスユーザーとして登録すると、ここにお店を出せます。',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                for (final s in filteredStores)
+                  Card(
+                    child: ListTile(
+                      leading: userAvatar(s.id, size: 44),
+                      title: Text(s.nickname,
+                          style:
+                              const TextStyle(fontWeight: FontWeight.bold)),
+                      subtitle: Text(
+                          '${s.storeType} / ${distanceLabel(_distanceKm(s))}'),
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.brown.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                          border:
+                              Border.all(color: Colors.brown.shade200),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '常連のドッグランコミュニティ、犬種別のオフ会、地域のイベントなど、'
-                          '誰でも作成・参加できるようになります。'
-                          'ビジネスユーザーも一般ユーザーも一緒に参加できます。',
-                          style: theme.textTheme.bodySmall,
+                        child: Text(
+                          'お店',
+                          style: TextStyle(
+                              fontSize: 11, color: Colors.brown.shade800),
                         ),
-                      ],
+                      ),
+                      onTap: () => showStoreSheet(context, s),
                     ),
                   ),
+                const SizedBox(height: 24),
+
+                // -------------------------------- コミュニティ・イベント
+                Row(
+                  children: [
+                    Icon(Icons.groups,
+                        size: 20, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Text('近くのコミュニティ・イベント',
+                        style: theme.textTheme.titleSmall),
+                    const SizedBox(width: 8),
+                    Text('（${communities.length}）',
+                        style: theme.textTheme.bodySmall),
+                  ],
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  '犬種オフ会・ドッグラン常連会・撮影会など。'
+                  '誰でも作成・参加でき、参加するとチャットが始まります。',
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                if (communities.isEmpty)
+                  Text(
+                    'まだコミュニティがありません。「コミュニティ」タブの「作る」から始められます。',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                for (final c in communities)
+                  Card(
+                    child: ListTile(
+                      leading: userAvatar(c.ownerId, size: 44),
+                      title: Text(
+                        c.linkedStore != null
+                            ? '${c.name}（${c.linkedStore}のファン）'
+                            : c.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        '${c.memberIds.length}人参加 / ${appState.communityDistanceLabel(c)}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: appState.me!.id == c.ownerId ||
+                              c.memberIds.contains(appState.me!.id)
+                          ? const Icon(Icons.chat_bubble_outline)
+                          : Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.brown.shade50,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: Colors.brown.shade200),
+                              ),
+                              child: Text(
+                                '参加',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.brown.shade800),
+                              ),
+                            ),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              CommunityDetailScreen(communityId: c.id),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             );
           },

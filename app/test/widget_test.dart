@@ -518,6 +518,22 @@ void main() {
       expect(state2.isBlocked(target.id), isTrue);
       expect(state2.blockedUserIds, contains(target.id));
     });
+
+    test('コミュニティは近い順に並ぶ（メンバー内の最寄り距離でソート）', () {
+      final state = AppState();
+      state.attachUser(_testUser(state), reseed: true);
+      final sorted = state.nearbyCommunities;
+      expect(sorted, isNotEmpty);
+      for (var i = 1; i < sorted.length; i++) {
+        expect(state.communityDistanceKm(sorted[i - 1]),
+            lessThanOrEqualTo(state.communityDistanceKm(sorted[i])));
+      }
+      // 全コミュニティが距離を持っている（シードのメンバーは現在地周囲に配置済み）
+      for (final c in sorted) {
+        expect(state.communityDistanceKm(c).isFinite, isTrue);
+        expect(state.communityDistanceLabel(c), isNotEmpty);
+      }
+    });
   });
 
   group('models', () {

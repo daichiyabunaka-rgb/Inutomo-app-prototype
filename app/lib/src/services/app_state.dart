@@ -463,6 +463,34 @@ class AppState extends ChangeNotifier {
     return null;
   }
 
+  /// コミュニティまでの距離（メンバー・主催の中で最も近い人までの距離）
+  double communityDistanceKm(Community c) {
+    if (me == null) return double.infinity;
+    var best = double.infinity;
+    for (final id in c.memberIds) {
+      final u = _users[id];
+      if (u == null) continue;
+      final km = haversineKm(me!.lat, me!.lng, u.lat, u.lng);
+      if (km < best) best = km;
+    }
+    return best;
+  }
+
+  /// コミュニティまでの粗い距離バンド（位置不明なら空文字）
+  String communityDistanceLabel(Community c) {
+    final km = communityDistanceKm(c);
+    return km.isFinite ? distanceLabel(km) : '';
+  }
+
+  /// 距離が近い順に並べたコミュニティ一覧
+  List<Community> get nearbyCommunities {
+    if (me == null) return const [];
+    final list = List<Community>.of(communities)
+      ..sort((a, b) =>
+          communityDistanceKm(a).compareTo(communityDistanceKm(b)));
+    return list;
+  }
+
   void _seedMockCommunities() {
     if (_communities.isNotEmpty) return;
     final now = _now();
