@@ -393,6 +393,7 @@ class ProtectedDog {
   final String dogDescription; // 犬種・大きさ・体色など
   final String areaName; // 保護・目撃・最後に見た場所
   final String detail; // 特徴・状況の自由記述
+  final String? photoPath; // 投稿写真（端末内パス or 公開URL）
   final double lat;
   final double lng;
   final DateTime createdAt;
@@ -408,6 +409,7 @@ class ProtectedDog {
     required this.lat,
     required this.lng,
     required this.createdAt,
+    this.photoPath,
     this.resolved = false,
   });
 

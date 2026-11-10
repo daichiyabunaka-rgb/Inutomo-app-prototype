@@ -1,12 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../models.dart';
 import '../services/app_state.dart';
 import '../util/format.dart';
 import 'chat_screen.dart';
+import 'protected_dog_create_sheet.dart';
 import 'user_detail_screen.dart';
 import 'widgets.dart';
-import 'protected_dog_create_sheet.dart';
 
 /// 「保護犬・迷子犬」タブ: 見つけて保護したワンちゃん・いなくなったワンちゃんの
 /// 情報を近隣で共有する（FR-7-1〜7-4）。
@@ -182,6 +184,17 @@ class _ProtectedDogsPageState extends State<ProtectedDogsPage> {
               ],
             ),
             const SizedBox(height: 8),
+            if (_hasPhoto(d))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: GestureDetector(
+                    onTap: () => _showPhoto(context, d),
+                    child: _photoImage(d, 320),
+                  ),
+                ),
+              ),
             if (d.detail.isNotEmpty)
               Text(d.detail, style: theme.textTheme.bodySmall),
             const SizedBox(height: 10),
@@ -229,6 +242,47 @@ class _ProtectedDogsPageState extends State<ProtectedDogsPage> {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  bool _hasPhoto(ProtectedDog d) {
+    final p = d.photoPath ?? '';
+    if (p.isEmpty) return false;
+    if (p.startsWith('http')) return true;
+    return File(p).existsSync();
+  }
+
+  Widget _photoImage(ProtectedDog d, double height) {
+    final p = d.photoPath!;
+    final Widget image;
+    if (p.startsWith('http')) {
+      image = Image.network(p,
+          height: height,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => const SizedBox.shrink());
+    } else {
+      image = Image.file(File(p),
+          height: height,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => const SizedBox.shrink());
+    }
+    return image;
+  }
+
+  /// 写真を全画面で見る
+  void _showPhoto(BuildContext context, ProtectedDog d) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(12),
+        child: GestureDetector(
+          onTap: () => Navigator.of(dialogContext).pop(),
+          child: _photoImage(d, 480),
         ),
       ),
     );

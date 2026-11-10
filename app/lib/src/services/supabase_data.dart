@@ -710,6 +710,7 @@ extension CommunityData on SupabaseData {
       dogDescription: row['dog_description'] as String,
       areaName: row['area_name'] as String,
       detail: (row['detail'] as String?) ?? '',
+      photoPath: row['photo_path'] as String?,
       lat: lat,
       lng: lng,
       createdAt: DateTime.parse(row['created_at'] as String).toLocal(),
@@ -746,6 +747,7 @@ extension CommunityData on SupabaseData {
     required String detail,
     required double lat,
     required double lng,
+    String? photoPath,
   }) async {
     final rows = await _c.from('protected_dogs').insert({
       'reporter_id': _myId,
@@ -753,6 +755,7 @@ extension CommunityData on SupabaseData {
       'dog_description': dogDescription,
       'area_name': areaName,
       'detail': detail,
+      'photo_path': photoPath,
       'location_geohash': geohashEncode(lat, lng, precision: 6),
     }).select();
     return _rowToProtectedDog((rows as List).first as Map<String, dynamic>);

@@ -1208,6 +1208,7 @@ class AppState extends ChangeNotifier {
     required String dogDescription,
     required String areaName,
     required String detail,
+    String? photoPath,
   }) async {
     if (_remote) {
       final created = await supabaseData.createProtectedDog(
@@ -1215,6 +1216,7 @@ class AppState extends ChangeNotifier {
         dogDescription: dogDescription,
         areaName: areaName,
         detail: detail,
+        photoPath: photoPath,
         lat: me!.lat,
         lng: me!.lng,
       );
@@ -1229,6 +1231,7 @@ class AppState extends ChangeNotifier {
       dogDescription: dogDescription,
       areaName: areaName,
       detail: detail,
+      photoPath: photoPath,
       lat: me!.lat,
       lng: me!.lng,
       createdAt: _now(),

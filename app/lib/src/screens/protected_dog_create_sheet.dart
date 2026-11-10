@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../services/app_state.dart';
+import '../services/icon_service.dart';
 
 /// 保護犬・迷子犬の登録シート（FR-7-1）。
 /// kind: 'protected'（見つけて保護した）/ 'lost'（手元からいなくなった）
@@ -24,6 +28,7 @@ class _CreateSheetState extends State<_CreateSheet> {
   final _areaName = TextEditingController();
   final _detail = TextEditingController();
   String _kind = 'protected';
+  String? _photoPath; // 選択した投稿写真（null=未選択, ''=解除）
   bool _submitting = false;
 
   @override
@@ -34,9 +39,12 @@ class _CreateSheetState extends State<_CreateSheet> {
     super.dispose();
   }
 
-  bool get _isValid =>
-      _dogDescription.text.trim().isNotEmpty &&
-      _areaName.text.trim().isNotEmpty;
+  Future<void> _pickPhoto(ImageSource source) async {
+    final path = await iconService.pickProtectedDogPhoto(source);
+    if (path != null) {
+      setState(() => _photoPath = path);
+    }
+  }
 
   Future<void> _submit() async {
     if (!_isValid || _submitting) return;
@@ -47,6 +55,8 @@ class _CreateSheetState extends State<_CreateSheet> {
         dogDescription: _dogDescription.text.trim(),
         areaName: _areaName.text.trim(),
         detail: _detail.text.trim(),
+        photoPath:
+            (_photoPath == null || _photoPath!.isEmpty) ? null : _photoPath,
       );
     } catch (_) {
       if (mounted) {
@@ -125,6 +135,46 @@ class _CreateSheetState extends State<_CreateSheet> {
               ),
             ),
             const SizedBox(height: 12),
+
+            // ------------------------------ 投稿写真（任意）
+            Text('写真（任意。ワンちゃんの見た目が伝わる写真を）',
+                style: theme.textTheme.titleSmall),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _photoPreview(theme),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: () => _pickPhoto(ImageSource.gallery),
+                        icon: const Icon(Icons.photo_library_outlined,
+                            size: 18),
+                        label: const Text('ギャラリーから',
+                            style: TextStyle(fontSize: 13)),
+                      ),
+                      const SizedBox(height: 4),
+                      OutlinedButton.icon(
+                        onPressed: () => _pickPhoto(ImageSource.camera),
+                        icon:
+                            const Icon(Icons.photo_camera_outlined, size: 18),
+                        label: const Text('カメラで撮影',
+                            style: TextStyle(fontSize: 13)),
+                      ),
+                      if (_photoPath != null && _photoPath!.isNotEmpty)
+                        TextButton(
+                          onPressed: () => setState(() => _photoPath = ''),
+                          child: const Text('写真をはずす',
+                              style: TextStyle(fontSize: 12)),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
             TextField(
               controller: _areaName,
               maxLength: 30,
@@ -159,6 +209,45 @@ class _CreateSheetState extends State<_CreateSheet> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  bool get _isValid =>
+      _dogDescription.text.trim().isNotEmpty &&
+      _areaName.text.trim().isNotEmpty;
+
+  Widget _photoPreview(ThemeData theme) {
+    final path = (_photoPath ?? '');
+    Widget preview;
+    if (path.startsWith('http')) {
+      preview = Image.network(path, width: 96, height: 96,
+          fit: BoxFit.cover, errorBuilder: (_, _, _) => _emptyPreview());
+    } else if (path.isNotEmpty && File(path).existsSync()) {
+      preview =
+          Image.file(File(path), width: 96, height: 96, fit: BoxFit.cover);
+    } else {
+      preview = _emptyPreview();
+    }
+    return Container(
+      width: 96,
+      height: 96,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: preview,
+      ),
+    );
+  }
+
+  Widget _emptyPreview() {
+    return Container(
+      color: Colors.grey.shade100,
+      child: const Center(
+        child: Icon(Icons.image_outlined, size: 32, color: Colors.grey),
       ),
     );
   }

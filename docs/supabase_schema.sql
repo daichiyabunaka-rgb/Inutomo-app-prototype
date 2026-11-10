@@ -223,6 +223,7 @@ create table public.protected_dogs (
   dog_description text not null,
   area_name text not null,
   detail text not null default '',
+  photo_path text,                           -- 投稿写真（Storage 'protected-dog-photos' バケットの公開URL）
   location_geohash text not null,
   resolved boolean not null default false,
   created_at timestamptz not null default now()

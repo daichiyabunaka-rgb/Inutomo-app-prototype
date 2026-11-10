@@ -576,8 +576,10 @@ void main() {
         dogDescription: 'テスト犬（小型・白）',
         areaName: 'テスト公園',
         detail: '目撃情報をお待ちしています',
+        photoPath: '/data/dog_photos/dog_photo_1.jpg',
       );
       expect(created.isLost, isTrue);
+      expect(created.photoPath, '/data/dog_photos/dog_photo_1.jpg');
       expect(
           state.protectedDogs.any((p) => p.id == created.id), isTrue);
       await state.resolveProtectedDog(created.id);
