@@ -10,6 +10,7 @@ import 'package:inutomo/src/services/app_state.dart';
 import 'package:inutomo/src/services/auth_service.dart';
 import 'package:inutomo/src/util/dog_parks.dart';
 import 'package:inutomo/src/util/format.dart';
+import 'package:inutomo/src/util/mock_persist.dart' as persist;
 import 'package:inutomo/src/util/share_text.dart';
 
 AppUser _testUser(AppState state, {String id = 'me', String nickname = 'テスト太郎'}) {
@@ -171,6 +172,122 @@ void main() {
         expect(restored.dogRule, p.dogRule);
         expect(restored.openingHours, p.openingHours);
       }
+    });
+  });
+
+  group('端末内スナップショット（モック永続化）', () {
+    test('募集・保護犬・コミュニティは保存用Mapとの往復ができる', () {
+      final now = DateTime(2026, 3, 1, 12, 0);
+      final rec = Recruitment(
+        id: 'r-1',
+        hostId: 'me',
+        genreId: 'sanpo',
+        title: 'テストの募集',
+        body: '本文',
+        meetup: 'テスト公園',
+        capacity: 3,
+        createdAt: now,
+        expiresAt: now.add(const Duration(hours: 1)),
+        memberIds: const ['me'],
+      );
+      final restored = persist.recruitmentFromMap(
+          persist.recruitmentToMap(rec));
+      expect(restored!.id, rec.id);
+      expect(restored.title, rec.title);
+      expect(restored.memberIds, rec.memberIds);
+
+      final dog = ProtectedDog(
+        id: 'pd-1',
+        reporterId: 'me',
+        kind: 'lost',
+        dogDescription: 'テスト犬',
+        areaName: 'テスト駅',
+        detail: '目撃募集',
+        lat: 35.0,
+        lng: 139.0,
+        createdAt: now,
+        photoPath: '/data/user/0/dog_photos/dog_photo_1.jpg',
+      );
+      final restoredDog = persist.protectedDogFromMap(
+          persist.protectedDogToMap(dog));
+      expect(restoredDog!.kind, 'lost');
+      expect(restoredDog.photoPath, dog.photoPath);
+      expect(restoredDog.createdAt, dog.createdAt);
+
+      final com = Community(
+        id: 'c-1',
+        ownerId: 'me',
+        name: 'テスト部',
+        description: '説明',
+        linkedStore: null,
+        createdAt: now,
+        memberIds: const {'me'},
+      );
+      final restoredCom = persist.communityFromMap(
+          persist.communityToMap(com));
+      expect(restoredCom!.name, com.name);
+      expect(restoredCom.memberIds, com.memberIds);
+    });
+
+    test('prune: 他アカウントと期限切れの募集は復元されない', () {
+      final now = DateTime.now();
+      final rec = Recruitment(
+        id: 'r-mine',
+        hostId: 'me',
+        genreId: 'sanpo',
+        title: '自分の募集',
+        body: '',
+        meetup: '駅',
+        capacity: 2,
+        createdAt: now,
+        expiresAt: now.add(const Duration(hours: 2)),
+        memberIds: const ['me'],
+      );
+      final expired = Recruitment(
+        id: 'r-expired',
+        hostId: 'me',
+        genreId: 'sanpo',
+        title: '期限切れ',
+        body: '',
+        meetup: '駅',
+        capacity: 2,
+        createdAt: now.subtract(const Duration(hours: 5)),
+        expiresAt: now.subtract(const Duration(hours: 1)),
+        memberIds: const ['me'],
+      );
+      final othersDog = ProtectedDog(
+        id: 'pd-other',
+        reporterId: 'someone-else',
+        kind: 'protected',
+        dogDescription: '他人の投稿',
+        areaName: 'どこか',
+        detail: '',
+        lat: 35.0,
+        lng: 139.0,
+        createdAt: now,
+      );
+      final myDog = ProtectedDog(
+        id: 'pd-mine',
+        reporterId: 'me',
+        kind: 'protected',
+        dogDescription: '自分の投稿',
+        areaName: 'どこか',
+        detail: '',
+        lat: 35.0,
+        lng: 139.0,
+        createdAt: now,
+      );
+      final snapshot = {
+        'recruitments': [rec, expired].map(persist.recruitmentToMap).toList(),
+        'protectedDogs': [othersDog, myDog].map(persist.protectedDogToMap).toList(),
+      };
+      final pruned = persist.pruneSnapshotToOwner(snapshot, 'me');
+      final recIds =
+          (pruned['recruitments'] as List).map((e) => e['id'] as String).toList();
+      expect(recIds, ['r-mine']); // 期限切れは捨てる
+      final dogIds =
+          (pruned['protectedDogs'] as List).map((e) => e['id'] as String).toList();
+      expect(dogIds, ['pd-mine']); // 他人の投稿は捨てる
     });
   });
 

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../mock/mock_data.dart';
 import '../models.dart';
 import '../util/format.dart';
+import '../util/mock_persist.dart' as persist;
 import 'app_config.dart';
 import 'supabase_data.dart';
 
@@ -320,26 +321,183 @@ class AppState extends ChangeNotifier {
       unawaited(refreshCommunities());
       _seeded = true;
     } else if (reseed || !_seeded) {
-      _recruitments.clear();
-      if (_useMockData) {
-        _recruitments.addAll(seedRecruitments(_now(), _users.values
-            .where((u) => u.id != me!.id && !u.isBusiness)
-            .toList()));
-        _seedMockCommunities();
-        _seedMockProtectedDogs();
-      }
       _seeded = true;
+      // リリース（配布）ビルド: 端末内スナップショットの復元 → シード。
+      // 開発・テストビルド: 復元は無いので同期でシードする
+      if (_persistEnabled) {
+        unawaited(_initMockDomain());
+      } else {
+        _seedMockDomain();
+      }
     }
     notifyListeners();
   }
 
+  /// モックモードのドメイン初期化（端末内スナップショットの復元つき）。
+  /// 自分のデータ（募集・保護犬・コミュニティ・部屋）を復元し、
+  /// 開発ビルドではシードが無い場合だけモックデータを補う。
+  Future<void> _initMockDomain() async {
+    _persistBusy = true;
+    await _loadDomainSnapshot();
+    _persistBusy = false;
+    _seedMockDomain();
+    notifyListeners();
+  }
+
+  void _seedMockDomain() {
+    if (!_useMockData) return;
+    if (_recruitments.isEmpty) {
+      _recruitments.addAll(seedRecruitments(_now(), _users.values
+          .where((u) => u.id != me!.id && !u.isBusiness)
+          .toList()));
+    }
+    _seedMockCommunities();
+    _seedMockProtectedDogs();
+  }
+
   /// ログアウト
   void detach() {
+    // 保留中の保存を実行してから破棄する（直前の変更を取りこぼさない）
+    _persistDebounce?.cancel();
+    if (me != null && _persistEnabled && !_persistBusy) {
+      unawaited(_saveDomainSnapshot());
+    }
     me = null;
     // 再ログイン時にブロック一覧を読み直す（アカウントが変わる場合がある）
     _blockedLoaded = false;
     _blockedUserIds.clear();
     notifyListeners();
+  }
+
+  // ------------------------------------------------- mock persistence
+
+  static const _kDomainSnapshot = 'inutomo_domain_state_v1';
+  Timer? _persistDebounce;
+  bool _persistBusy = false;
+
+  /// リリース（配布）ビルドのモックモードでは、自分の募集・保護犬/迷子犬・
+  /// コミュニティ・部屋・メッセージを端末内に保存し、再起動後も残す。
+  /// 開発・テストビルドではオフ（シード・テスト動作を壊さないため）。
+  /// Supabase モードでは Postgres が永続化するため対象外。
+  bool get _persistEnabled => kReleaseMode && !_remote;
+
+  /// 状態変更に合わせて（1秒後に）スナップショットを保存する
+  @override
+  void notifyListeners() {
+    super.notifyListeners();
+    if (!_persistEnabled || me == null || _persistBusy) return;
+    _persistDebounce?.cancel();
+    _persistDebounce = Timer(const Duration(seconds: 1), _saveDomainSnapshot);
+  }
+
+  Map<String, dynamic> _buildSnapshot() {
+    final roomIds = _rooms
+        .where((r) => r.memberIds.contains(me!.id))
+        .map((r) => r.id)
+        .toSet();
+    final communityIds = _communities.map((c) => c.id).toSet();
+    final events = <CommunityEvent>[];
+    _eventsByCommunity.forEach((communityId, list) {
+      if (communityIds.contains(communityId)) {
+        events.addAll(list);
+      }
+    });
+    return {
+      'recruitments': _recruitments
+          .where((r) => r.hostId == me!.id)
+          .map(persist.recruitmentToMap)
+          .toList(),
+      'applications': _applications
+          .where((a) =>
+              a.applicantId == me!.id ||
+              _recruitments.any((r) => r.id == a.recruitmentId && r.hostId == me!.id))
+          .map(persist.joinApplicationToMap)
+          .toList(),
+      'rooms': _rooms
+          .where((r) => r.memberIds.contains(me!.id))
+          .map(persist.chatRoomToMap)
+          .toList(),
+      'messages': _messages.entries
+          .expand((e) => e.value)
+          .where((m) => roomIds.contains(m.roomId))
+          .map(persist.chatMessageToMap)
+          .toList(),
+      'communities': _communities.map(persist.communityToMap).toList(),
+      'events': events.map(persist.communityEventToMap).toList(),
+      // シード(id付き pd-seed-)は保存しない（再ログイン時に再生成される）
+      'protectedDogs': _protectedDogs
+          .where((p) => p.reporterId == me!.id && !p.id.startsWith('pd-seed-'))
+          .map(persist.protectedDogToMap)
+          .toList(),
+    };
+  }
+
+  Future<void> _saveDomainSnapshot() async {
+    final mine = me;
+    if (mine == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kDomainSnapshot, jsonEncode(_buildSnapshot()));
+    } catch (_) {
+      // 保存失敗は無視（メモリにはある）
+    }
+  }
+
+  /// 端末内スナップショットを復元する（自分のデータのみ。他アカウントの
+  /// 残骸は所有者チェックではじく）。
+  Future<bool> _loadDomainSnapshot() async {
+    if (!_persistEnabled) return false;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_kDomainSnapshot);
+      if (raw == null || raw.isEmpty) return false;
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      final pruned = persist.pruneSnapshotToOwner(decoded, me!.id);
+      final recs = ((pruned['recruitments'] as List?) ?? const [])
+          .map((e) => persist.recruitmentFromMap(e as Map<String, dynamic>))
+          .whereType<Recruitment>();
+      _recruitments
+        ..clear()
+        ..addAll(recs);
+      _applications
+        ..clear()
+        ..addAll(((pruned['applications'] as List?) ?? const [])
+            .map((e) =>
+                persist.joinApplicationFromMap(e as Map<String, dynamic>))
+            .whereType<JoinApplication>());
+      _rooms
+        ..clear()
+        ..addAll(((pruned['rooms'] as List?) ?? const [])
+            .map((e) => persist.chatRoomFromMap(e as Map<String, dynamic>))
+            .whereType<ChatRoom>());
+      _messages.clear();
+      for (final m in ((pruned['messages'] as List?) ?? const [])
+          .map((e) => persist.chatMessageFromMap(e as Map<String, dynamic>))
+          .whereType<ChatMessage>()) {
+        _messages.putIfAbsent(m.roomId, () => []).add(m);
+      }
+      unreadByRoom.clear();
+      _communities
+        ..clear()
+        ..addAll(((pruned['communities'] as List?) ?? const [])
+            .map((e) => persist.communityFromMap(e as Map<String, dynamic>))
+            .whereType<Community>());
+      _eventsByCommunity.clear();
+      for (final e in ((pruned['events'] as List?) ?? const [])
+          .map((e) => persist.communityEventFromMap(e as Map<String, dynamic>))
+          .whereType<CommunityEvent>()) {
+        _eventsByCommunity.putIfAbsent(e.communityId, () => []).add(e);
+      }
+      _protectedDogs
+        ..clear()
+        ..addAll(((pruned['protectedDogs'] as List?) ?? const [])
+            .map((e) => persist.protectedDogFromMap(e as Map<String, dynamic>))
+            .whereType<ProtectedDog>());
+      return true;
+    } catch (_) {
+      // 壊れたスナップショットは無視して普通に初期化
+      return false;
+    }
   }
 
   /// Supabase モード: 近くの人・募集・応募・部屋を実データから引き直す
@@ -519,7 +677,10 @@ class AppState extends ChangeNotifier {
   }
 
   void _seedMockCommunities() {
-    if (_communities.isNotEmpty) return;
+    // シードは開発用の固定IDで二重追加を防ぐ（自分のコミュニティが
+    // あってもシードは補われる）
+    const seedIds = {'c-dogrun', 'c-wanpluza', 'c-photo'};
+    if (_communities.any((c) => seedIds.contains(c.id))) return;
     final now = _now();
     _communities.addAll([
       Community(
