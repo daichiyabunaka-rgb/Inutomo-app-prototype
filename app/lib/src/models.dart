@@ -38,7 +38,7 @@ const List<InterestCategory> interestCategories = [
   InterestCategory('travel', 'お出かけ・旅行', Icons.luggage),
   InterestCategory('health', '健康・動物病院', Icons.medical_services),
   InterestCategory('grooming', 'トリミング・お手入れ', Icons.content_cut),
-  InterestCategory('rescue', '保護犬・里亲身', Icons.volunteer_activism),
+  InterestCategory('rescue', '保護犬・里親活動', Icons.volunteer_activism),
   InterestCategory('wanko', '犬友達・多頭飼い', Icons.diversity_1),
 ];
 
