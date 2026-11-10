@@ -121,21 +121,27 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
-      body: ListenableBuilder(
-        listenable: appState,
-        builder: (context, _) {
-          final messages = appState.messagesOf(widget.roomId);
-          return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-            itemCount: messages.length,
-            itemBuilder: (context, i) {
-              final m = messages[i];
-              return _MessageTile(message: m);
-            },
-          );
-        },
+      body: Column(
+        children: [
+          Expanded(
+            child: ListenableBuilder(
+              listenable: appState,
+              builder: (context, _) {
+                final messages = appState.messagesOf(widget.roomId);
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                  itemCount: messages.length,
+                  itemBuilder: (context, i) {
+                    final m = messages[i];
+                    return _MessageTile(message: m);
+                  },
+                );
+              },
+            ),
+          ),
+          _ChatInput(roomId: widget.roomId),
+        ],
       ),
-      bottomSheet: _ChatInput(roomId: widget.roomId),
     );
   }
 }
@@ -168,6 +174,8 @@ class _ChatInputState extends State<_ChatInput> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
+      // ナビゲーションバー・ジェスチャーバーとの誤タッチを防ぐ
+      minimum: const EdgeInsets.only(bottom: 4),
       child: Container(
         color: Theme.of(context).scaffoldBackgroundColor,
         padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
