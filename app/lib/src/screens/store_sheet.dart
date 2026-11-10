@@ -41,7 +41,7 @@ Future<void> showStoreSheet(BuildContext context, BusinessUser store) {
           children: [
             Row(
               children: [
-                userAvatar(store.id, size: 56),
+                tappableAvatar(context, store.id, size: 56),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

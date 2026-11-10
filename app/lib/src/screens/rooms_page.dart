@@ -79,7 +79,7 @@ class _RoomsPageState extends State<RoomsPage> {
                 final last = appState.lastMessageOf(room.id);
                 final unread = appState.unreadByRoom[room.id] ?? 0;
                 return ListTile(
-                  leading: userAvatar(leadingId, size: 48),
+                  leading: tappableAvatar(context, leadingId, size: 48),
                   title: Text(
                     title,
                     maxLines: 1,

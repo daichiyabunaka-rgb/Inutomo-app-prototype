@@ -90,7 +90,7 @@ class _RecruitmentDetailScreenState extends State<RecruitmentDetailScreen> {
                     children: [
                       Row(
                         children: [
-                          userAvatar(host.id, size: 56, iconScale: 0.45),
+                          tappableAvatar(context, host.id, size: 56, iconScale: 0.45),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -187,7 +187,7 @@ class _RecruitmentDetailScreenState extends State<RecruitmentDetailScreen> {
                           for (final m in bodyRec.memberIds)
                             Padding(
                               padding: const EdgeInsets.only(right: 4),
-                              child: userAvatar(m, size: 36),
+                              child: tappableAvatar(context, m, size: 36),
                             ),
                           if (bodyRec.remainingSlots > 0)
                             CircleAvatar(
@@ -325,7 +325,7 @@ class _RecruitmentDetailScreenState extends State<RecruitmentDetailScreen> {
       children: [
         Row(
           children: [
-            userAvatar(applicant.id, size: 40),
+            tappableAvatar(context, applicant.id, size: 40),
             const SizedBox(width: 10),
             Expanded(
               child: Column(

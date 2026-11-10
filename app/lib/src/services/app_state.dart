@@ -298,8 +298,12 @@ class AppState extends ChangeNotifier {
     _rebuildMockUsers();
     _replaceMockProtectedDogSeeds();
     if (me != null) {
-      me = me!.withPosition(lat, lng);
-      _users[me!.id] = me!;
+      // ビジネスユーザーは店舗の位置（プロフィール位置）を GPS で
+      // 更新しない（登録時に設定した位置に固定）
+      if (!me!.isBusiness) {
+        me = me!.withPosition(lat, lng);
+        _users[me!.id] = me!;
+      }
     }
     notifyListeners();
     if (_remote && me != null) {
@@ -1382,12 +1386,19 @@ class AppState extends ChangeNotifier {
     String? photoPath,
   }) async {
     if (_remote) {
+      // アップロード失敗で端末内パス（http で始まらない）が返ってきた場合、
+      // 他の端末から見えないため photoPath として保存しない
+      final effectivePhoto = (photoPath != null &&
+              photoPath.isNotEmpty &&
+              photoPath.startsWith('http'))
+          ? photoPath
+          : null;
       final created = await supabaseData.createProtectedDog(
         kind: kind,
         dogDescription: dogDescription,
         areaName: areaName,
         detail: detail,
-        photoPath: photoPath,
+        photoPath: effectivePhoto,
         lat: me!.lat,
         lng: me!.lng,
       );

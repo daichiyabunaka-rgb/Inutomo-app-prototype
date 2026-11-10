@@ -63,7 +63,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                     children: [
                       Row(
                         children: [
-                          userAvatar(c.ownerId, size: 52),
+                          tappableAvatar(context, c.ownerId, size: 52),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
@@ -100,7 +100,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                             Padding(
                               padding:
                                   const EdgeInsets.only(right: 4),
-                              child: userAvatar(m, size: 32),
+                              child: tappableAvatar(context, m, size: 32),
                             ),
                         ],
                       ),

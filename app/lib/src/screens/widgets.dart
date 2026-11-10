@@ -4,6 +4,25 @@ import 'package:flutter/material.dart';
 
 import '../models.dart';
 import '../services/app_state.dart';
+import 'user_detail_screen.dart';
+
+/// アバターをタップしたらプロフィール画面へ遷移する。
+/// 自分の場合は遷移しない。
+Widget tappableAvatar(BuildContext context, String userId,
+    {double size = 44, double iconScale = 0.5}) {
+  if (userId == appState.me?.id) {
+    return userAvatar(userId, size: size, iconScale: iconScale);
+  }
+  return InkWell(
+    onTap: () => Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => UserDetailScreen(userId: userId),
+      ),
+    ),
+    customBorder: const CircleBorder(),
+    child: userAvatar(userId, size: size, iconScale: iconScale),
+  );
+}
 
 /// 趣味アイコンのアバター。
 /// 投稿画像（愛犬の写真など）があればそれを表示し、なければ趣味アイコンセットに

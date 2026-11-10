@@ -30,6 +30,7 @@ class _CreateSheetState extends State<_CreateSheet> {
   late String _genreId;
   int _capacity = 3;
   int _expiryHours = 2;
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -52,7 +53,8 @@ class _CreateSheetState extends State<_CreateSheet> {
       _title.text.trim().isNotEmpty && _meetup.text.trim().isNotEmpty;
 
   Future<void> _post() async {
-    if (!_isValid) return;
+    if (!_isValid || _submitting) return;
+    setState(() => _submitting = true);
     try {
       await appState.createRecruitment(
         genreId: _genreId,
@@ -64,6 +66,7 @@ class _CreateSheetState extends State<_CreateSheet> {
       );
     } catch (_) {
       if (mounted) {
+        setState(() => _submitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('募集の作成に失敗しました。通信状況を確認してください'),
@@ -199,7 +202,7 @@ class _CreateSheetState extends State<_CreateSheet> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: _isValid ? _post : null,
+                onPressed: (_isValid && !_submitting) ? _post : null,
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 14),
                   child: Text('募集する'),

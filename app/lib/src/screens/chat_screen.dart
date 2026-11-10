@@ -114,7 +114,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 for (final m in room.memberIds)
                   Padding(
                     padding: const EdgeInsets.only(left: 4),
-                    child: userAvatar(m, size: 28),
+                    child: tappableAvatar(context, m, size: 28),
                   ),
               ],
             ),
@@ -236,7 +236,7 @@ class _MessageTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (!isMine) ...[
-            userAvatar(sender.id, size: 32),
+            tappableAvatar(context, sender.id, size: 32),
             const SizedBox(width: 8),
           ],
           Flexible(
