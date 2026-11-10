@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models.dart';
 import '../services/app_state.dart';
 import '../util/format.dart';
+import 'user_detail_screen.dart';
 import 'widgets.dart';
 
 /// 「探す」タブ: カテゴリで近くの人を探す（FR-2-4）。
@@ -80,6 +81,11 @@ class _ExplorePageState extends State<ExplorePage> {
                             Icon(appState.categoryOf(id).icon,
                                 size: 18, color: Colors.grey.shade600),
                         ],
+                      ),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => UserDetailScreen(userId: u.id),
+                        ),
                       ),
                     ),
                   ),
