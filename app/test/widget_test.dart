@@ -154,6 +154,35 @@ void main() {
       expect(q, contains('"leisure"="park"'));
       expect(q, contains('"dog"!="no"'));
     });
+
+    test('Google Places のレスポンスを解析できる', () {
+      const placesJson = '''
+{
+  "status": "OK",
+  "results": [
+    {"place_id": "p1", "name": "中央公園",
+     "geometry": {"location": {"lat": 35.68, "lng": 139.77}}},
+    {"place_id": "p2", "name": "",
+     "geometry": {"location": {"lat": 35.60, "lng": 139.77}}}
+  ]
+}''';
+      final parks =
+          parsePlacesResponse(placesJson, 35.6812, 139.7671, isDogRun: false);
+      expect(parks, hasLength(2));
+      expect(parks.first.name, '中央公園');
+      // 名前が空の場合はフォールバック名になる
+      expect(parks.last.name, '名称未登録の公園');
+      // 距離昇順ではないので、API 側の並びのまま返す（呼び出し側でソート）
+      expect(parks.first.distanceKm, lessThan(parks.last.distanceKm));
+    });
+
+    test('Google Places のステータスがエラーなら例外', () {
+      const errorJson = '{"status": "REQUEST_DENIED", "results": []}';
+      expect(
+        () => parsePlacesResponse(errorJson, 35.68, 139.77, isDogRun: true),
+        throwsA(isA<ParkFetchException>()),
+      );
+    });
   });
 
   group('AuthService（モック認証）', () {
