@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:inutomo/main.dart';
 import 'package:inutomo/src/models.dart';
+import 'package:inutomo/src/screens/chat_screen.dart';
 import 'package:inutomo/src/services/ai_concierge.dart';
 import 'package:inutomo/src/services/app_state.dart';
 import 'package:inutomo/src/services/auth_service.dart';
@@ -529,5 +530,26 @@ void main() {
             matching: find.byType(FilledButton))
         .first;
     expect(tester.widget<FilledButton>(next).enabled, isFalse);
+  });
+
+  testWidgets('DMは承認不要で即座に部屋が開く（回帰テスト）', (tester) async {
+    // DM部屋は募集と紐付かない（recruitmentId が空）ため、
+    // チャット画面は募集を必須として扱ってはならない
+    appState.attachUser(_testUser(appState), reseed: true);
+    final other = appState.generalUsers.first;
+    final room = await appState.getOrCreateDm(other.id);
+    expect(room.isDm, isTrue);
+    expect(room.recruitmentId, isEmpty);
+
+    await tester.pumpWidget(
+      MaterialApp(home: ChatScreen(roomId: room.id)),
+    );
+    await tester.pump();
+    expect(find.text('部屋が見つかりません'), findsNothing);
+    expect(find.text('DM（1:1）'), findsOneWidget);
+    expect(find.text(other.nickname), findsOneWidget);
+
+    // チャット画面のタイマーを破棄するため別の画面に差し替える
+    await tester.pumpWidget(const SizedBox());
   });
 }

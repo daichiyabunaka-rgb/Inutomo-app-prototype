@@ -68,8 +68,14 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final room = appState.roomById(widget.roomId);
-    final rec = room == null ? null : appState.recruitmentById(room.recruitmentId);
-    if (room == null || rec == null) {
+    if (room == null) {
+      return const Scaffold(body: Center(child: Text('部屋が見つかりません')));
+    }
+    // 募集ベースのグループ部屋には募集が必須。DM・コミュニティ部屋は不要
+    final rec = room.recruitmentId.isEmpty
+        ? null
+        : appState.recruitmentById(room.recruitmentId);
+    if (room.type == 'group' && rec == null) {
       return const Scaffold(body: Center(child: Text('部屋が見つかりません')));
     }
     final theme = Theme.of(context);
@@ -80,8 +86,12 @@ class _ChatScreenState extends State<ChatScreen> {
           room.memberIds.firstWhere((id) => id != appState.me!.id));
       title = other.nickname;
       subtitle = 'DM（1:1）';
+    } else if (room.isCommunity) {
+      final community = appState.communityById(room.communityId ?? '');
+      title = community?.name ?? 'コミュニティ';
+      subtitle = 'コミュニティ（${room.memberIds.length}人）';
     } else {
-      title = rec.title;
+      title = rec!.title;
       subtitle = '${room.memberIds.length}人の部屋 / 待: ${rec.meetup}';
     }
     return Scaffold(
