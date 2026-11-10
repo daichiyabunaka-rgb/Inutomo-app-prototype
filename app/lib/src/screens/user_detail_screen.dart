@@ -34,11 +34,87 @@ class UserDetailScreen extends StatelessWidget {
     return 'https://$raw';
   }
 
+  /// ブロックの確認。ブロックしたことは相手には一切伝わらない。
+  Future<void> _confirmBlock(BuildContext context, AppUser user) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('${user.nickname}さんをブロックしますか？'),
+        content: const Text(
+            'この人のプロフィール・募集・部屋が表示されなくなります。'
+            'ブロックしたことを相手に通知することはありません。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('キャンセル'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red.shade700,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('ブロックする'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await appState.blockUser(user.id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('ブロックしました。この人のプロフィール・募集・部屋は非表示になります'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: appState,
+      builder: (context, _) => _buildBody(context),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
     final theme = Theme.of(context);
     final user = appState.userById(userId);
     final isMe = appState.me!.id == user.id;
+
+    // ブロック済みの相手: プロフィールの内容は非表示にする
+    if (appState.isBlocked(user.id)) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('プロフィール')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.block, size: 48, color: Colors.grey.shade500),
+                const SizedBox(height: 12),
+                const Text('ブロックしたユーザーです'),
+                const SizedBox(height: 8),
+                Text(
+                  'この人のプロフィール・募集・部屋は表示されません。',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.lock_open_outlined),
+                  label: const Text('ブロックを解除する'),
+                  onPressed: () => appState.unblockUser(user.id),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final recruitments = appState
         .activeRecruitments()
         .where((r) => r.hostId == user.id)
@@ -175,6 +251,17 @@ class UserDetailScreen extends StatelessWidget {
                     ),
                   );
                 },
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                icon: Icon(Icons.block_outlined,
+                    size: 18, color: Colors.red.shade700),
+                label: Text('この人をブロック',
+                    style: TextStyle(color: Colors.red.shade700)),
+                onPressed: () => _confirmBlock(context, user),
               ),
             ),
           ],

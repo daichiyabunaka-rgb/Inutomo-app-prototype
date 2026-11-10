@@ -147,11 +147,95 @@ class AppState extends ChangeNotifier {
     _rebuildMockUsers();
   }
 
+  // ------------------------------------------------------------ blocks
+
+  static const _kBlockedUsers = 'inutomo_blocked_users';
+  final Set<String> _blockedUserIds = {};
+  bool _blockedLoaded = false;
+
+  /// ブロック中のユーザーID一覧
+  List<String> get blockedUserIds => List.unmodifiable(_blockedUserIds);
+
+  bool isBlocked(String userId) => _blockedUserIds.contains(userId);
+
+  /// ログイン時にブロック一覧を復元/取得する。
+  /// 並行して走る blockUser との競合を避けるため、クリアではなく追記のみ行う。
+  Future<void> loadBlockedUsers() async {
+    if (_blockedLoaded) return;
+    _blockedLoaded = true;
+    List<String> ids = const [];
+    if (_remote) {
+      try {
+        ids = await supabaseData.fetchBlockedUserIds();
+      } catch (_) {
+        // 取得失敗時は空で続行（引き更新で再取得する）
+      }
+    } else {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        ids = prefs.getStringList(_kBlockedUsers) ?? [];
+      } catch (_) {
+        // 無視
+      }
+    }
+    if (ids.isEmpty) return;
+    _blockedUserIds.addAll(ids);
+    notifyListeners();
+  }
+
+  /// ユーザーをブロックする。
+  /// この人のプロフィール・募集・DM部屋が自分から見えなくなる。
+  /// 相手には一切通知されない（ブロックされたことは相手側から分からない）。
+  Future<void> blockUser(String userId) async {
+    if (me == null || userId == me!.id) return;
+    if (!_blockedUserIds.add(userId)) return;
+    notifyListeners();
+    if (_remote) {
+      try {
+        await supabaseData.blockUser(userId);
+      } catch (_) {
+        // 保存できない場合でもこのセッション内では有効
+      }
+    } else {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList(
+            _kBlockedUsers, _blockedUserIds.toList());
+      } catch (_) {
+        // 保存失敗でもメモリには残る
+      }
+    }
+  }
+
+  /// ブロックを解除する（相手には通知されない）
+  Future<void> unblockUser(String userId) async {
+    if (!_blockedUserIds.remove(userId)) return;
+    notifyListeners();
+    if (_remote) {
+      try {
+        await supabaseData.unblockUser(userId);
+      } catch (_) {
+        // 無視
+      }
+    } else {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList(
+            _kBlockedUsers, _blockedUserIds.toList());
+      } catch (_) {
+        // 無視
+      }
+    }
+  }
+
   // ---------------------------------------------------------------- basics
 
   DateTime _now() => DateTime.now();
 
   AppUser userById(String id) => _users[id]!;
+
+  /// 存在しない可能性があるユーザー（ブロック一覧の表示など）用
+  AppUser? tryUserById(String id) => _users[id];
 
   Recruitment? recruitmentById(String id) {
     for (final r in _recruitments) {
@@ -169,17 +253,21 @@ class AppState extends ChangeNotifier {
 
   List<AppUser> get allUsers => _users.values.toList();
 
-  /// 近くの一般ユーザー（自分以外、ビジネス除く）
+  /// 近くの一般ユーザー（自分以外、ビジネス除く、ブロック済みは非表示）
   List<AppUser> get generalUsers {
     if (me == null) return const [];
     return _users.values
-        .where((u) => u.id != me!.id && !u.isBusiness)
+        .where((u) =>
+            u.id != me!.id && !u.isBusiness && !isBlocked(u.id))
         .toList();
   }
 
-  /// 近くのビジネスユーザー（店舗）
+  /// 近くのビジネスユーザー（店舗。ブロック済みは非表示）
   List<BusinessUser> get businessUsers {
-    return _users.values.whereType<BusinessUser>().toList();
+    return _users.values
+        .whereType<BusinessUser>()
+        .where((u) => !isBlocked(u.id))
+        .toList();
   }
 
   void _rebuildMockUsers() {
@@ -216,6 +304,7 @@ class AppState extends ChangeNotifier {
     me = user;
     _users[me!.id] = me!;
     unawaited(loadCategories());
+    unawaited(loadBlockedUsers());
     if (_remote) {
       // Supabase モード: モックのシードは作らず実データを引きに行く
       unawaited(refreshFromRemote());
@@ -235,6 +324,9 @@ class AppState extends ChangeNotifier {
   /// ログアウト
   void detach() {
     me = null;
+    // 再ログイン時にブロック一覧を読み直す（アカウントが変わる場合がある）
+    _blockedLoaded = false;
+    _blockedUserIds.clear();
     notifyListeners();
   }
 
@@ -772,12 +864,13 @@ class AppState extends ChangeNotifier {
 
   // ------------------------------------------------------------ recruit
 
-  /// 近くのアクティブな募集（距離近い順）。未ログインなら空。
+  /// 近くのアクティブな募集（距離近い順。ブロック済みユーザーの募集は非表示）。
+  /// 未ログインなら空。
   List<Recruitment> activeRecruitments({String? genreId}) {
     if (me == null) return const [];
     final now = _now();
     final list = _recruitments
-        .where((r) => r.isActiveAt(now))
+        .where((r) => r.isActiveAt(now) && !isBlocked(r.hostId))
         .toList()
       ..sort((a, b) {
         final da = haversineKm(
@@ -1042,9 +1135,16 @@ class AppState extends ChangeNotifier {
   // ------------------------------------------------------------ rooms / DM
 
   List<ChatRoom> get myRooms {
-    return _rooms
-        .where((r) => me != null && r.memberIds.contains(me!.id))
-        .toList();
+    return _rooms.where((r) {
+      if (me == null || !r.memberIds.contains(me!.id)) return false;
+      // 相手をブロックしているDM部屋は一覧から消す
+      if (r.isDm) {
+        for (final id in r.memberIds) {
+          if (id != me!.id && isBlocked(id)) return false;
+        }
+      }
+      return true;
+    }).toList();
   }
 
   List<ChatMessage> messagesOf(String roomId) => _messages[roomId] ?? const [];

@@ -237,6 +237,8 @@ class MyPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
+                _blockedUsersCard(context),
+                const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -276,6 +278,57 @@ class MyPage extends StatelessWidget {
             );
           },
         ),
+      ),
+    );
+  }
+
+  /// ブロックしたユーザーの一覧（解除はここから。相手には通知されない）
+  Widget _blockedUsersCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final blocked = appState.blockedUserIds;
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Text('ブロックしたユーザー',
+                style: theme.textTheme.titleSmall),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'ブロックした人のプロフィール・募集・部屋は非表示になります。'
+              'ブロックしたことは相手には通知されません。',
+              style: theme.textTheme.bodySmall!
+                  .copyWith(color: Colors.grey.shade600),
+            ),
+          ),
+          if (blocked.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              child: Text(
+                'ブロック中のユーザーはいません',
+                style: theme.textTheme.bodySmall!
+                    .copyWith(color: Colors.grey.shade500),
+              ),
+            )
+          else
+            for (final id in blocked)
+              ListTile(
+                dense: true,
+                leading: Icon(Icons.block,
+                    size: 20, color: Colors.grey.shade500),
+                title: Text(
+                  appState.tryUserById(id)?.nickname ?? '（退会済みのユーザー）',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                trailing: TextButton(
+                  onPressed: () => appState.unblockUser(id),
+                  child: const Text('解除'),
+                ),
+              ),
+        ],
       ),
     );
   }

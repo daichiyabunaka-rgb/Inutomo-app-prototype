@@ -473,6 +473,51 @@ void main() {
       expect(dup, isNull);
       expect(state.categories.length, before + 1);
     });
+
+    test('ブロックすると相手のプロフィール・募集・DM部屋が非表示になる（解除で戻る）',
+        () async {
+      SharedPreferences.setMockInitialValues({});
+      final state = AppState();
+      state.attachUser(_testUser(state), reseed: true);
+      final hostId = state
+          .activeRecruitments()
+          .firstWhere((r) => r.hostId != state.me!.id)
+          .hostId;
+      // ブロック前: 一覧に見え、DM部屋も見える
+      expect(state.generalUsers.any((u) => u.id == hostId), isTrue);
+      expect(
+          state.activeRecruitments().any((r) => r.hostId == hostId), isTrue);
+      final dm = await state.getOrCreateDm(hostId);
+      expect(state.myRooms.any((r) => r.id == dm.id), isTrue);
+
+      await state.blockUser(hostId);
+      expect(state.isBlocked(hostId), isTrue);
+      expect(state.generalUsers.any((u) => u.id == hostId), isFalse);
+      expect(
+          state.activeRecruitments().any((r) => r.hostId == hostId), isFalse);
+      expect(state.myRooms.any((r) => r.id == dm.id), isFalse);
+
+      await state.unblockUser(hostId);
+      expect(state.isBlocked(hostId), isFalse);
+      expect(state.generalUsers.any((u) => u.id == hostId), isTrue);
+      expect(
+          state.activeRecruitments().any((r) => r.hostId == hostId), isTrue);
+      expect(state.myRooms.any((r) => r.id == dm.id), isTrue);
+    });
+
+    test('ブロック一覧は端末に保存され、アプリ再起動でも復元される', () async {
+      SharedPreferences.setMockInitialValues({});
+      final state1 = AppState();
+      state1.attachUser(_testUser(state1), reseed: true);
+      final target = state1.generalUsers.first;
+      await state1.blockUser(target.id);
+
+      // 新しいインスタンス（= アプリ再起動）でも復元される
+      final state2 = AppState();
+      await state2.loadBlockedUsers();
+      expect(state2.isBlocked(target.id), isTrue);
+      expect(state2.blockedUserIds, contains(target.id));
+    });
   });
 
   group('models', () {

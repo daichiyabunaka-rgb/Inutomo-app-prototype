@@ -669,4 +669,31 @@ extension CommunityData on SupabaseData {
         .eq('event_id', eventId)
         .eq('user_id', _myId);
   }
+
+  // ---------------------------------------------------------- blocks
+
+  /// ブロック中のユーザーID一覧（RLS: 本人の行のみ参照可能）
+  Future<List<String>> fetchBlockedUserIds() async {
+    final rows =
+        await _c.from('blocks').select('blocked_id').eq('blocker_id', _myId);
+    return [
+      for (final r in rows as List) r['blocked_id'] as String,
+    ];
+  }
+
+  /// ブロックする。相手には通知しない（RLS: 相手は本テーブルを読めない）
+  Future<void> blockUser(String userId) async {
+    await _c.from('blocks').upsert({
+      'blocker_id': _myId,
+      'blocked_id': userId,
+    });
+  }
+
+  /// ブロックを解除する
+  Future<void> unblockUser(String userId) async {
+    await _c.from('blocks').delete().match({
+      'blocker_id': _myId,
+      'blocked_id': userId,
+    });
+  }
 }
