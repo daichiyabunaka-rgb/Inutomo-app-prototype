@@ -4,6 +4,7 @@ import '../models.dart';
 import '../services/app_state.dart';
 import '../util/format.dart';
 import 'community_detail_screen.dart';
+import 'protected_dogs_page.dart';
 import 'store_sheet.dart';
 import 'user_detail_screen.dart';
 import 'widgets.dart';
@@ -185,6 +186,53 @@ class _ExplorePageState extends State<ExplorePage> {
                       onTap: () => showStoreSheet(context, s),
                     ),
                   ),
+                const SizedBox(height: 24),
+
+                // -------------------------------------- 保護犬・迷子犬
+                Card(
+                  color:
+                      theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.pets,
+                                color: theme.colorScheme.primary),
+                            const SizedBox(width: 8),
+                            Text('保護犬・迷子犬',
+                                style: theme.textTheme.titleSmall),
+                            const SizedBox(width: 8),
+                            Text('（${appState.protectedDogs.length}件）',
+                                style: theme.textTheme.bodySmall),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '見つけて保護したワンちゃん・いなくなったワンちゃんの情報を'
+                          '近くで共有します。近くの登録を近い順に探せて、'
+                          '登録者に直接連絡することもできます。',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.tonalIcon(
+                            icon: const Icon(Icons.search, size: 18),
+                            label: const Text('探す・登録する'),
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const ProtectedDogsPage(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 24),
 
                 // -------------------------------- コミュニティ・イベント

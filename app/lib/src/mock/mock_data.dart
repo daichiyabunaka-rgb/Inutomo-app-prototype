@@ -291,6 +291,82 @@ List<Recruitment> seedRecruitments(DateTime now, List<AppUser> generalUsers) {
   ];
 }
 
+/// 保護犬・迷子犬のシード。anchor（現在地）からの相対距離で配置する。
+/// id が 'pd-seed-' 始まりのものは GPS 更新のたびに再配置される
+/// （AppState.applyGps を参照）。
+class _ProtectedSeedSpec {
+  final String id;
+  final String reporterId;
+  final String kind;
+  final String dogDescription;
+  final String areaName;
+  final String detail;
+  final double northKm;
+  final double eastKm;
+  final Duration age;
+  const _ProtectedSeedSpec(this.id, this.reporterId, this.kind,
+      this.dogDescription, this.areaName, this.detail, this.northKm,
+      this.eastKm, this.age);
+}
+
+const List<_ProtectedSeedSpec> _protectedSeedSpecs = [
+  _ProtectedSeedSpec(
+    'pd-seed-1',
+    'u-golden-rin',
+    'protected',
+    '柴犬（成犬・中型・茶色）',
+    '河川敷リバーサイド公園 周辺',
+    '首輪なし。人懐こく、現在自宅ゲート内で保護しています。'
+        '飼い主さんを探しています。お心当たりのある方はDMをください。',
+    0.3,
+    -0.6,
+    Duration(hours: 2),
+  ),
+  _ProtectedSeedSpec(
+    'pd-seed-2',
+    'u-toypoodle-aoi',
+    'lost',
+    'トイプードル（1歳・小型・アプリコット）',
+    '駅東側の商店街',
+    '夕方17時頃に玄関から飛び出しました。青い首輪をしていました。'
+        '少し怖がりです。目撃情報だけでも歓迎します。',
+    -0.2,
+    0.8,
+    Duration(hours: 5),
+  ),
+  _ProtectedSeedSpec(
+    'pd-seed-3',
+    'u-chihuahua-nana',
+    'protected',
+    '混合犬と思われる小型犬（シニア・白っぽい毛色）',
+    'わんわん公園 周辺',
+    '駐車場で震えていたので自宅に保護しました。痩せているので保護団体にも'
+        '連絡済みです。ご家族の方はDMください。',
+    -0.9,
+    -0.3,
+    Duration(hours: 26),
+  ),
+];
+
+List<ProtectedDog> buildSeedProtectedDogs(
+    DateTime now, double anchorLat, double anchorLng) {
+  final cos = (anchorLat * math.pi / 180.0).abs().clamp(0.01, 1.0);
+  return [
+    for (final s in _protectedSeedSpecs)
+      ProtectedDog(
+        id: s.id,
+        reporterId: s.reporterId,
+        kind: s.kind,
+        dogDescription: s.dogDescription,
+        areaName: s.areaName,
+        detail: s.detail,
+        lat: anchorLat + s.northKm / _kmPerDegLat,
+        lng: anchorLng + s.eastKm / (_kmPerDegLat * cos),
+        createdAt: now.subtract(s.age),
+      ),
+  ];
+}
+
 /// モックの返信候補（デモの自動応答に使う。本開発では Supabase Realtime に置換）
 const List<String> mockReplies = [
   'よろしくお願いします！',

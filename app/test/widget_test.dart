@@ -48,6 +48,20 @@ void main() {
       expect(remainingLabel(now.subtract(const Duration(minutes: 1)), now),
           '終了');
     });
+
+    test('経過時間ラベル', () {
+      final now = DateTime(2026, 2, 1, 12, 0);
+      expect(elapsedLabel(now.subtract(const Duration(seconds: 30)), now),
+          'たった今');
+      expect(
+          elapsedLabel(now.subtract(const Duration(minutes: 42)), now),
+          '42分前');
+      expect(
+          elapsedLabel(now.subtract(const Duration(hours: 5)), now),
+          '5時間前');
+      expect(elapsedLabel(now.subtract(const Duration(days: 2)), now),
+          '2日前');
+    });
   });
 
   group('share_text（SNS共有文）', () {
@@ -533,6 +547,42 @@ void main() {
         expect(state.communityDistanceKm(c).isFinite, isTrue);
         expect(state.communityDistanceLabel(c), isNotEmpty);
       }
+    });
+
+    test('保護犬・迷子犬: シードは近い順に並び、保護・迷子両方を含む', () {
+      final state = AppState();
+      state.attachUser(_testUser(state), reseed: true);
+      final dogs = state.protectedDogs;
+      expect(dogs, isNotEmpty);
+      expect(dogs.any((p) => p.isProtected), isTrue);
+      expect(dogs.any((p) => p.isLost), isTrue);
+      final me = state.me!;
+      double km(ProtectedDog p) => haversineKm(me.lat, me.lng, p.lat, p.lng);
+      for (var i = 1; i < dogs.length; i++) {
+        expect(km(dogs[i - 1]), lessThanOrEqualTo(km(dogs[i])));
+      }
+      for (final p in dogs) {
+        // 相対配置されているので全シードが現在地の近くにある
+        expect(km(p), lessThan(6.0));
+        expect(state.protectedDogDistanceLabel(p), isNotEmpty);
+      }
+    });
+
+    test('保護犬・迷子犬: 登録して一覧に出し、解決済みで消える', () async {
+      final state = AppState();
+      state.attachUser(_testUser(state), reseed: true);
+      final created = await state.registerProtectedDog(
+        kind: 'lost',
+        dogDescription: 'テスト犬（小型・白）',
+        areaName: 'テスト公園',
+        detail: '目撃情報をお待ちしています',
+      );
+      expect(created.isLost, isTrue);
+      expect(
+          state.protectedDogs.any((p) => p.id == created.id), isTrue);
+      await state.resolveProtectedDog(created.id);
+      expect(
+          state.protectedDogs.any((p) => p.id == created.id), isFalse);
     });
   });
 

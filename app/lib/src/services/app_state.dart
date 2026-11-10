@@ -287,6 +287,7 @@ class AppState extends ChangeNotifier {
     anchorLat = lat;
     anchorLng = lng;
     _rebuildMockUsers();
+    _replaceMockProtectedDogSeeds();
     if (me != null) {
       me = me!.withPosition(lat, lng);
       _users[me!.id] = me!;
@@ -317,6 +318,7 @@ class AppState extends ChangeNotifier {
           .toList()));
       _seeded = true;
       _seedMockCommunities();
+      _seedMockProtectedDogs();
     }
     notifyListeners();
   }
@@ -396,6 +398,21 @@ class AppState extends ChangeNotifier {
         if (!exists) {
           _rooms.add(room);
           _messages.putIfAbsent(room.id, () => []);
+        }
+      }
+      // 保護犬・迷子犬
+      final dogs = await supabaseData.fetchProtectedDogs(me!);
+      _protectedDogs
+        ..clear()
+        ..addAll(dogs);
+      for (final d in dogs) {
+        if (!_users.containsKey(d.reporterId)) {
+          try {
+            final reporter = await supabaseData.fetchProfileById(d.reporterId);
+            if (reporter != null) _users[d.reporterId] = reporter;
+          } catch (_) {
+            // 無視
+          }
         }
       }
       unawaited(refreshCommunities());
@@ -1158,6 +1175,98 @@ class AppState extends ChangeNotifier {
     _rooms.insert(0, room);
     _messages[room.id] = [];
     return room;
+  }
+
+  // ------------------------------------------------- protected dogs
+
+  final List<ProtectedDog> _protectedDogs = [];
+
+  /// 解決済みとブロック済みユーザーの投稿を除いた保護犬・迷子犬の一覧
+  /// （距離近い順）
+  List<ProtectedDog> get protectedDogs {
+    if (me == null) return const [];
+    return _protectedDogs
+        .where((p) => !p.resolved && !isBlocked(p.reporterId))
+        .toList()
+      ..sort((a, b) => _protectedDogKm(a).compareTo(_protectedDogKm(b)));
+  }
+
+  double _protectedDogKm(ProtectedDog p) {
+    if (me == null) return double.infinity;
+    return haversineKm(me!.lat, me!.lng, p.lat, p.lng);
+  }
+
+  /// 登録までの粗い距離バンド
+  String protectedDogDistanceLabel(ProtectedDog p) {
+    final km = _protectedDogKm(p);
+    return km.isFinite ? distanceLabel(km) : '';
+  }
+
+  /// 保護犬（見つけて保護した）/ 迷子犬（いなくなった）を登録する
+  Future<ProtectedDog> registerProtectedDog({
+    required String kind,
+    required String dogDescription,
+    required String areaName,
+    required String detail,
+  }) async {
+    if (_remote) {
+      final created = await supabaseData.createProtectedDog(
+        kind: kind,
+        dogDescription: dogDescription,
+        areaName: areaName,
+        detail: detail,
+        lat: me!.lat,
+        lng: me!.lng,
+      );
+      _protectedDogs.insert(0, created);
+      notifyListeners();
+      return created;
+    }
+    final dog = ProtectedDog(
+      id: 'pd-${_seq++}',
+      reporterId: me!.id,
+      kind: kind,
+      dogDescription: dogDescription,
+      areaName: areaName,
+      detail: detail,
+      lat: me!.lat,
+      lng: me!.lng,
+      createdAt: _now(),
+    );
+    _protectedDogs.insert(0, dog);
+    notifyListeners();
+    return dog;
+  }
+
+  /// 登録を解決済みにする（飼い主と再会、保護先へ引き取られた等）
+  Future<void> resolveProtectedDog(String id) async {
+    for (final p in _protectedDogs) {
+      if (p.id == id) {
+        p.resolved = true;
+        break;
+      }
+    }
+    notifyListeners();
+    if (_remote) {
+      try {
+        await supabaseData.resolveProtectedDog(id);
+      } catch (_) {
+        // 無視（再取得で同期される）
+      }
+    }
+  }
+
+  /// モック: シードの保護犬・迷子犬を現在地周囲に配置する
+  void _seedMockProtectedDogs() {
+    if (_protectedDogs.any((p) => p.id.startsWith('pd-seed-'))) return;
+    _protectedDogs.addAll(buildSeedProtectedDogs(_now(), anchorLat, anchorLng));
+  }
+
+  /// 実 GPS で現在地が変わったら、シードの投稿も作り直す
+  void _replaceMockProtectedDogSeeds() {
+    if (_remote) return;
+    _protectedDogs.removeWhere((p) => p.id.startsWith('pd-seed-'));
+    _protectedDogs.addAll(buildSeedProtectedDogs(_now(), anchorLat, anchorLng));
   }
 
   // ------------------------------------------------------------ rooms / DM

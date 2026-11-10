@@ -212,6 +212,33 @@ alter table public.blocks enable row level security;
 create policy "ブロックは本人のみ" on public.blocks
   for all using (auth.uid() = blocker_id);
 
+-- ------------------------------------------------------------
+-- 6.x 保護犬・迷子犬の登録（近隣共有。位置は geohash のみ保持）
+-- 譲渡・里親探しは行わない（自治体・保護団体の正式な手続きへ誘導）
+-- ------------------------------------------------------------
+create table public.protected_dogs (
+  id uuid primary key default gen_random_uuid(),
+  reporter_id uuid not null references public.profiles(id) on delete cascade,
+  kind text not null check (kind in ('protected', 'lost')),
+  dog_description text not null,
+  area_name text not null,
+  detail text not null default '',
+  location_geohash text not null,
+  resolved boolean not null default false,
+  created_at timestamptz not null default now()
+);
+create index protected_dogs_geohash_idx on public.protected_dogs (location_geohash);
+
+alter table public.protected_dogs enable row level security;
+create policy "保護犬迷子犬は誰でも閲覧可" on public.protected_dogs
+  for select using (true);
+create policy "登録は本人のみ" on public.protected_dogs
+  for insert with check (auth.uid() = reporter_id);
+create policy "更新削除は本人のみ" on public.protected_dogs
+  for update using (auth.uid() = reporter_id);
+create policy "削除は本人のみ" on public.protected_dogs
+  for delete using (auth.uid() = reporter_id);
+
 -- ============================================================
 -- 7. 補助関数
 -- ============================================================

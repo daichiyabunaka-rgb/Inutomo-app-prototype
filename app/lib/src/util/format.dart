@@ -21,6 +21,15 @@ String remainingLabel(DateTime expiresAt, DateTime now) {
   return '残り$minutes分';
 }
 
+/// 投稿からの経過ラベル（例: '3時間前' / '2日前'）
+String elapsedLabel(DateTime createdAt, DateTime now) {
+  final diff = now.difference(createdAt);
+  if (diff.inMinutes < 1) return 'たった今';
+  if (diff.inMinutes < 60) return '${diff.inMinutes}分前';
+  if (diff.inHours < 24) return '${diff.inHours}時間前';
+  return '${diff.inDays}日前';
+}
+
 /// Haversine 距離（km）。本開発では端末側で geohash 化して送信するため、
 /// この計算はモック用。表示は必ず distanceLabel でバンド化する。
 double haversineKm(double lat1, double lng1, double lat2, double lng2) {

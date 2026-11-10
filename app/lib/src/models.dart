@@ -382,6 +382,40 @@ class CommunityEvent {
   }
 }
 
+/// 保護犬・迷子犬の登録（近隣での情報共有）。
+/// kind: 'protected' = 見つけて保護したワンちゃん
+///       'lost'      = 手元からいなくなったワンちゃん
+/// 譲渡・里親探しは行わない（自治体・保護団体の正式な手続きへ誘導する設計）。
+class ProtectedDog {
+  final String id;
+  final String reporterId;
+  final String kind; // 'protected' | 'lost'
+  final String dogDescription; // 犬種・大きさ・体色など
+  final String areaName; // 保護・目撃・最後に見た場所
+  final String detail; // 特徴・状況の自由記述
+  final double lat;
+  final double lng;
+  final DateTime createdAt;
+  bool resolved; // 解決済み（飼い主と再会、保護先へ引き取られた等）
+
+  ProtectedDog({
+    required this.id,
+    required this.reporterId,
+    required this.kind,
+    required this.dogDescription,
+    required this.areaName,
+    required this.detail,
+    required this.lat,
+    required this.lng,
+    required this.createdAt,
+    this.resolved = false,
+  });
+
+  bool get isProtected => kind == 'protected';
+
+  bool get isLost => kind == 'lost';
+}
+
 class ChatMessage {
   final String id;
   final String roomId;

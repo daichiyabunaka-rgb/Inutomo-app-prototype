@@ -696,4 +696,70 @@ extension CommunityData on SupabaseData {
       'blocked_id': userId,
     });
   }
+
+  // ---------------------------------------------------- protected dogs
+
+  ProtectedDog _rowToProtectedDog(Map<String, dynamic> row) {
+    final gh = row['location_geohash'] as String?;
+    final (lat, lng) =
+        gh == null ? (0.0, 0.0) : geohashDecode(gh);
+    return ProtectedDog(
+      id: row['id'] as String,
+      reporterId: row['reporter_id'] as String,
+      kind: row['kind'] as String,
+      dogDescription: row['dog_description'] as String,
+      areaName: row['area_name'] as String,
+      detail: (row['detail'] as String?) ?? '',
+      lat: lat,
+      lng: lng,
+      createdAt: DateTime.parse(row['created_at'] as String).toLocal(),
+      resolved: (row['resolved'] as bool?) ?? false,
+    );
+  }
+
+  /// 近くの保護犬・迷子犬の登録（geohash 先頭4桁一致 = 約20km四方）
+  Future<List<ProtectedDog>> fetchProtectedDogs(AppUser me) async {
+    final rows = await _c
+        .from('protected_dogs')
+        .select()
+        .order('created_at', ascending: false)
+        .limit(100);
+    final myPrefix = geohashEncode(me.lat, me.lng, precision: 4);
+    final dogs = <ProtectedDog>[];
+    for (final row in (rows as List).cast<Map<String, dynamic>>()) {
+      try {
+        final gh = row['location_geohash'] as String?;
+        if (gh == null || !gh.startsWith(myPrefix)) continue;
+        dogs.add(_rowToProtectedDog(row));
+      } catch (_) {
+        // 壊れた行は読み飛ばす
+      }
+    }
+    return dogs;
+  }
+
+  /// 保護犬・迷子犬を登録する
+  Future<ProtectedDog> createProtectedDog({
+    required String kind,
+    required String dogDescription,
+    required String areaName,
+    required String detail,
+    required double lat,
+    required double lng,
+  }) async {
+    final rows = await _c.from('protected_dogs').insert({
+      'reporter_id': _myId,
+      'kind': kind,
+      'dog_description': dogDescription,
+      'area_name': areaName,
+      'detail': detail,
+      'location_geohash': geohashEncode(lat, lng, precision: 6),
+    }).select();
+    return _rowToProtectedDog((rows as List).first as Map<String, dynamic>);
+  }
+
+  /// 登録を解決済みにする（本人のみ、RLSで担保）
+  Future<void> resolveProtectedDog(String id) async {
+    await _c.from('protected_dogs').update({'resolved': true}).eq('id', id);
+  }
 }
