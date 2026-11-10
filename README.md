@@ -24,7 +24,7 @@
 - 1:1のDM
 - ブロック機能（相手には通知されません。ブロックすると相手のプロフィール・募集・DM部屋が非表示になり、マイページから解除できます）
 - アイコン画像の投稿（愛犬・散歩風景。ギャラリー / カメラ、端末内永続化）
-- **近くの公園・ドッグランを探す（本アプリの特別機能）**: 現在地周辺の**実在の**公園・ドッグラン（OpenStreetMap / Overpass API）を近い順に一覧表示。**有料のドッグランは一覧から除外（無料のみ表示）**。「Googleマップで開く」でナビに遷移、「この公園で募集」ボタンで待ち合わせ場所を初期設定した募集を作成
+- **近くの公園を探す（本アプリの特別機能）**: 現在地周辺の**実在の**公園（OpenStreetMap / Overpass API）を近い順に一覧表示。**ドッグランは一覧に含めません**。「Googleマップで開く」でナビに遷移、「この公園で募集」ボタンで待ち合わせ場所を初期設定した募集を作成
 - 近くの店マップ（OpenStreetMap）+ Googleマップで開く
 - 「探す」タブから店舗（ドッグラン・ペットサロン等）を検索、近くのコミュニティ・イベントを距離順に閲覧・参加
 - **保護犬・迷子犬タブ（専用機能）**: 見つけて保護したワンちゃん・いなくなったワンちゃんの情報を近隣で共有（距離順・絞り込み・**写真添付**・登録者へのDM・解決済み管理）。譲渡・里親探しは行わず、自治体・保護団体の正式な手続きへ案内する設計
@@ -41,7 +41,7 @@ docs/
 app/                            Flutter アプリ（Android / iOS / Web 対応ビルド）
   lib/src/screens/             画面（near_page に 募集/人/店/公園 の4セグメント）
   lib/src/services/             状態・認証・位置情報・AI接客（本開発で Supabase 実装に差し替える境界）
-  lib/src/util/dog_parks.dart   近くの公園・ドッグランの取得（Overpass API、有料除外・距離順）とGoogleマップURL生成
+  lib/src/util/dog_parks.dart   近くの公園の取得（Overpass API、ドッグラン除外・距離順）とGoogleマップURL生成
   lib/src/mock/                 モックユーザー・シード募集（GPS現在地周囲に配置）
 tools/make_icon.py              ランチャーアイコン生成スクリプト（Python + Pillow）
 ```
@@ -61,7 +61,7 @@ flutter build apk --release    # APK ビルド
 ## 本開発への移行計画
 
 1. **Supabase**: `docs/supabase_schema.sql` を適用し、`AuthService` / データ層を Supabase（Auth / Postgres+geohash / Realtime / Storage）に差し替え
-2. **公園データ**: OpenStreetMap（Overpass API）で実データを取得。必要に応じて Google Places API（`dog_park`）に置換し、Place ID による「Googleマップで開く」連携へ切り替え
+2. **公園データ**: OpenStreetMap（Overpass API）で実データを取得（Google Places API との連携は本リリース時のオプションとして見送り）
 3. **AI接客**: ルールベースのモックを LLM API に置換（店舗情報 + 口調設定をプロンプトに渡す）
 4. **モデレーション**: アイコン画像の AI 顔検出（**人間の顔のみ**拒否。愛犬の顔は許可するため Human/Animal の判別が必要）、禁止ワード審査
 5. **地図**: 必要に応じて Google Maps SDK（APIキー）に移行し経路案内を表示

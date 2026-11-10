@@ -7,10 +7,10 @@ import '../util/dog_parks.dart';
 import '../util/format.dart';
 import 'recruitment_create_sheet.dart';
 
-/// 「近くの公園・ドッグラン」タブ（犬とも！の特別機能）。
-/// 現在地の近くの公園・ドッグランを近い順に表示する。
-/// 有料のドッグランは表示しない。各公園はGoogleマップで開けるほか、
-/// その公園に直接募集（お散歩・ドッグラン）をかけることができる。
+/// 「近くの公園」タブ（犬とも！の特別機能）。
+/// 現在地の近くの公園を近い順に表示する（ドッグランは一覧に含めない）。
+/// 各公園はGoogleマップで開けるほか、その公園に直接募集
+/// （お散歩）をかけることができる。
 class ParkPage extends StatefulWidget {
   const ParkPage({super.key});
 
@@ -57,7 +57,7 @@ class _ParkPageState extends State<ParkPage> {
                 children: [
                   const SizedBox(height: 4),
                   Text(
-                    '現在地の近くの公園・ドッグランを近い順に表示します。',
+                    '現在地の近くの公園を近い順に表示します。',
                     style: theme.textTheme.bodySmall,
                   ),
                   if (snapshot.connectionState != ConnectionState.done &&
@@ -108,7 +108,7 @@ class _ParkPageState extends State<ParkPage> {
         children: [
           Icon(Icons.park, size: 40, color: Colors.grey.shade500),
           const SizedBox(height: 8),
-          Text('近くに公園・ドッグランが見つかりませんでした。',
+          Text('近くに公園が見つかりませんでした。',
               style: theme.textTheme.bodySmall),
         ],
       ),
@@ -127,7 +127,7 @@ class _ParkPageState extends State<ParkPage> {
             Row(
               children: [
                 Icon(
-                  p.isDogRun ? Icons.pets : Icons.park,
+                  Icons.park,
                   color: theme.colorScheme.primary,
                   size: 28,
                 ),
@@ -143,8 +143,7 @@ class _ParkPageState extends State<ParkPage> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${p.isDogRun ? 'ドッグラン' : '公園'} / '
-                        '${distanceLabel(p.distanceKm)}',
+                        '公園 / ${distanceLabel(p.distanceKm)}',
                         style: theme.textTheme.bodySmall!.copyWith(
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.bold,
@@ -165,10 +164,9 @@ class _ParkPageState extends State<ParkPage> {
               spacing: 6,
               runSpacing: 4,
               children: [
-                if (p.isDogRun && p.feeFreeKnown) _chip(theme, '無料'),
                 if (p.dogRule == 'yes') _chip(theme, '犬OK'),
                 if (p.dogRule == 'leashed') _chip(theme, 'リード着用'),
-                if (!p.isDogRun && p.dogRule == 'unknown')
+                if (p.dogRule == 'unknown')
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(

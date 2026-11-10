@@ -111,33 +111,35 @@ void main() {
   ]
 }''';
 
-    test('実在データのパース: 有料ドッグランと犬NG公園は除外される', () {
+    test('実在データのパース: ドッグランと犬NG公園は除外される', () {
       final parks = parseOverpassResponse(overpassJson, 35.6812, 139.7671);
       final names = parks.map((p) => p.name).toList();
-      expect(names, isNot(contains('B有料ドッグラン'))); // fee=yes は除外
+      expect(names, isNot(contains('A公園ドッグラン'))); // ドッグランは出さない
+      expect(names, isNot(contains('B有料ドッグラン'))); // ドッグランは出さない
       expect(names, isNot(contains('F犬NG公園'))); // dog=no は除外
-      expect(names, contains('A公園ドッグラン'));
       expect(names, contains('C公園'));
+      expect(names, contains('E無名に近い公園'));
+      // ドッグランは一切含まれない
+      expect(parks.any((p) => p.isDogRun), isFalse);
     });
 
     test('結果は現在地からの距離の昇順に並ぶ', () {
       final parks = parseOverpassResponse(overpassJson, 35.6812, 139.7671);
       expect(parks.length, greaterThanOrEqualTo(2));
       for (var i = 1; i < parks.length; i++) {
-        expect(parks[i - 1].distanceKm, lessThanOrEqualTo(parks[i].distanceKm));
+        expect(parks[i - 1].distanceKm,
+            lessThanOrEqualTo(parks[i].distanceKm));
       }
       // 一番近いのは E無名に近い公園（dogタグなしの公園も載せる）
       expect(parks.first.name, 'E無名に近い公園');
     });
 
-    test('タグから属性が読み取れる（ドッグラン無料表示・リード着用）', () {
+    test('タグから属性が読み取れる（犬OK・リード着用）', () {
       final parks = parseOverpassResponse(overpassJson, 35.6812, 139.7671);
-      final run = parks.firstWhere((p) => p.name == 'A公園ドッグラン');
-      expect(run.isDogRun, isTrue);
-      expect(run.feeFreeKnown, isTrue); // fee=no
-      final park = parks.firstWhere((p) => p.name == 'C公園');
-      expect(park.isDogRun, isFalse);
-      expect(park.dogRule, 'leashed');
+      final leashed = parks.firstWhere((p) => p.name == 'C公園');
+      expect(leashed.dogRule, 'leashed');
+      final ok = parks.firstWhere((p) => p.name == 'D遠い公園');
+      expect(ok.dogRule, 'yes');
     });
 
     test('Googleマップ用URLは公園の座標で組み立てられる', () {
@@ -148,40 +150,11 @@ void main() {
       expect(url, contains('${park.lat},${park.lng}'));
     });
 
-    test('Overpassクエリは現在地を中心とした範囲を含む', () {
+    test('Overpassクエリは公園のみを含む（ドッグランを含まない）', () {
       final q = buildOverpassQuery(35.6812, 139.7671, radiusKm: 5);
-      expect(q, contains('"leisure"="dog_park"'));
+      expect(q, isNot(contains('dog_park')));
       expect(q, contains('"leisure"="park"'));
       expect(q, contains('"dog"!="no"'));
-    });
-
-    test('Google Places のレスポンスを解析できる', () {
-      const placesJson = '''
-{
-  "status": "OK",
-  "results": [
-    {"place_id": "p1", "name": "中央公園",
-     "geometry": {"location": {"lat": 35.68, "lng": 139.77}}},
-    {"place_id": "p2", "name": "",
-     "geometry": {"location": {"lat": 35.60, "lng": 139.77}}}
-  ]
-}''';
-      final parks =
-          parsePlacesResponse(placesJson, 35.6812, 139.7671, isDogRun: false);
-      expect(parks, hasLength(2));
-      expect(parks.first.name, '中央公園');
-      // 名前が空の場合はフォールバック名になる
-      expect(parks.last.name, '名称未登録の公園');
-      // 距離昇順ではないので、API 側の並びのまま返す（呼び出し側でソート）
-      expect(parks.first.distanceKm, lessThan(parks.last.distanceKm));
-    });
-
-    test('Google Places のステータスがエラーなら例外', () {
-      const errorJson = '{"status": "REQUEST_DENIED", "results": []}';
-      expect(
-        () => parsePlacesResponse(errorJson, 35.68, 139.77, isDogRun: true),
-        throwsA(isA<ParkFetchException>()),
-      );
     });
   });
 

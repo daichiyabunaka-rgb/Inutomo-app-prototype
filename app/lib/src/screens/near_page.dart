@@ -17,7 +17,7 @@ import 'widgets.dart';
 /// [募集] アクティブな募集を距離順に表示（FR-2-2）
 /// [人] 近くの一般ユーザーのアイコンが並ぶ（要望: 位置情報から近くの一般ユーザー）
 /// [店] 近くのビジネスユーザーのアイコンが並ぶ（要望: 近くのビジネスユーザー）
-/// [公園] 近くの公園・ドッグランを探す（Googleマップ連携）
+/// [公園] 近くの公園を探す（Googleマップ連携）
 class NearPage extends StatefulWidget {
   const NearPage({super.key});
 
