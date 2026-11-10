@@ -101,8 +101,9 @@ create policy "応募の承認却下はホストのみ" on public.join_applicati
 -- ============================================================
 create table public.chat_rooms (
   id uuid primary key default gen_random_uuid(),
-  recruitment_id uuid,                    -- DM の場合は null
-  type text not null default 'group' check (type in ('group','dm')),
+  recruitment_id uuid,                    -- DM・コミュニティの場合は null
+  community_id uuid,                      -- コミュニティチャットの場合（beta2で追加。新規プロジェクトでは最初から持つ）
+  type text not null default 'group' check (type in ('group','dm','community')),
   created_at timestamptz not null default now()
 );
 
@@ -125,11 +126,60 @@ create table public.chat_messages (
 
 alter table public.chat_room_members enable row level security;
 create policy "メンバーは自分の参加情報を閲覧" on public.chat_room_members
-  for select using (auth.uid() = user_id);
+  for select using (
+    auth.uid() = user_id
+    or public.is_room_member(chat_room_members.room_id)
+  );
 create policy "本人のみ自分の参加を追加" on public.chat_room_members
-  for insert with check (auth.uid() = user_id);
--- NOTE: グループ部屋のメンバー追加（承認時）はホスト権限の RPC で行う想定。
+  for insert with check (
+    auth.uid() = user_id
+    or public.is_recruitment_host(room_id)
+  );
+-- NOTE: グループ部屋のメンバー追加（承認時）は募集のホストが行う。
 -- DM の作成は get_or_create_dm（security definer）で本人確認してから行う
+
+-- RLS ポリシー内で同じテーブルを参照すると無限再帰するため、
+-- ヘルパーは security definer でメンバーシップのみを確認する
+create or replace function public.is_room_member(p_room uuid)
+returns boolean
+language sql security definer stable set search_path = public
+as $$
+  select exists (
+    select 1 from public.chat_room_members m
+    where m.room_id = p_room and m.user_id = auth.uid()
+  );
+$$;
+
+create or replace function public.is_recruitment_host(p_room uuid)
+returns boolean
+language sql security definer stable set search_path = public
+as $$
+  select exists (
+    select 1
+      from public.recruitments r
+      join public.chat_rooms c on c.recruitment_id = r.id
+     where c.id = p_room and r.host_id = auth.uid()
+  );
+$$;
+
+-- 最近の Supabase プロジェクトはテーブル作成時に RLS が自動有効化されるため、
+-- chat_rooms にも明示的にポリシーが必要
+alter table public.chat_rooms enable row level security;
+create policy "部屋はメンバー・コミュニティ参加者が閲覧" on public.chat_rooms
+  for select using (
+    public.is_room_member(chat_rooms.id)
+    or (
+      chat_rooms.community_id is not null
+      and exists (
+        select 1 from public.community_members cm
+        where cm.community_id = chat_rooms.community_id
+          and cm.user_id = auth.uid()
+      )
+    )
+  );
+create policy "認証ユーザーは部屋を作成可" on public.chat_rooms
+  for insert to authenticated
+  with check (type in ('group', 'community'));
 
 alter table public.chat_messages enable row level security;
 create policy "メンバーのみメッセージを閲覧" on public.chat_messages
@@ -215,6 +265,12 @@ create table public.blocks (
   created_at timestamptz not null default now(),
   primary key (blocker_id, blocked_id)
 );
+
+alter table public.reports enable row level security;
+create policy "通報は本人が作成" on public.reports
+  for insert to authenticated with check (auth.uid() = reporter_id);
+create policy "通報は本人が閲覧" on public.reports
+  for select using (auth.uid() = reporter_id);
 
 alter table public.blocks enable row level security;
 create policy "ブロックは本人のみ" on public.blocks
