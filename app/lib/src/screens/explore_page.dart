@@ -23,6 +23,10 @@ class _ExplorePageState extends State<ExplorePage> {
   ExploreSection _section = ExploreSection.people;
   String? _selectedCategory;
   final TextEditingController _storeSearch = TextEditingController();
+  // 一覧は50件ずつ表示（「さらに表示」で追加）
+  static const int batchSize = 50;
+  int _peopleShown = batchSize;
+  int _storesShown = batchSize;
 
   @override
   void dispose() {
@@ -126,7 +130,7 @@ class _ExplorePageState extends State<ExplorePage> {
         Text('近くの犬とも候補（${users.length}人）',
             style: theme.textTheme.titleSmall),
         const SizedBox(height: 8),
-        for (final u in users)
+        for (final u in users.take(_peopleShown))
           Card(
             child: ListTile(
               leading: userAvatar(u.id, size: 44),
@@ -149,6 +153,11 @@ class _ExplorePageState extends State<ExplorePage> {
                 ),
               ),
             ),
+          ),
+        if (users.length > _peopleShown)
+          OutlinedButton(
+            onPressed: () => setState(() => _peopleShown += batchSize),
+            child: Text('さらに表示（残り${users.length - _peopleShown}人）'),
           ),
       ],
     );
@@ -211,7 +220,7 @@ class _ExplorePageState extends State<ExplorePage> {
             'ビジネスユーザーとして登録すると、ここにお店を出せます。',
             style: theme.textTheme.bodySmall,
           ),
-        for (final s in filteredStores)
+        for (final s in filteredStores.take(_storesShown))
           Card(
             child: ListTile(
               leading: userAvatar(s.id, size: 44),
@@ -235,6 +244,11 @@ class _ExplorePageState extends State<ExplorePage> {
               ),
               onTap: () => showStoreSheet(context, s),
             ),
+          ),
+        if (filteredStores.length > _storesShown)
+          OutlinedButton(
+            onPressed: () => setState(() => _storesShown += batchSize),
+            child: Text('さらに表示（残り${filteredStores.length - _storesShown}件）'),
           ),
       ],
     );

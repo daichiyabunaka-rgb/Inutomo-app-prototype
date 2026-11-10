@@ -25,8 +25,10 @@ const List<String> overpassEndpoints = [
   'https://overpass.private.coffee/api/interpreter',
 ];
 
-const int maxParks = 30;
+const int maxParks = 100;
 const double searchRadiusKm = 5.0;
+/// 一覧の1画面あたりの表示件数（スクロールで「さらに表示」）
+const int parkBatchSize = 50;
 /// 本家サーバーの混雑時は応答まで30〜60秒かかる
 const Duration parkFetchTimeout = Duration(seconds: 60);
 const Duration parkCacheTtl = Duration(minutes: 30);

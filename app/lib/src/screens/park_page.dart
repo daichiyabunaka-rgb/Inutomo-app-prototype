@@ -21,6 +21,7 @@ class ParkPage extends StatefulWidget {
 class _ParkPageState extends State<ParkPage> {
   String? _anchorKey;
   late Future<List<DogPark>> _future;
+  int _shownCount = parkBatchSize; // 50件ずつ表示（スクロールで増やす）
 
   void _reloadIfNeeded() {
     final key =
@@ -45,6 +46,7 @@ class _ParkPageState extends State<ParkPage> {
               _anchorKey =
                   '${appState.anchorLat.toStringAsFixed(5)},${appState.anchorLng.toStringAsFixed(5)}';
               _future = f;
+              _shownCount = parkBatchSize;
             });
             await f;
           },
@@ -81,7 +83,19 @@ class _ParkPageState extends State<ParkPage> {
                   if (snapshot.hasError) _errorCard(theme),
                   if (snapshot.hasData) ...[
                     if (snapshot.data!.isEmpty) _emptyCard(theme),
-                    for (final p in snapshot.data!) _parkCard(context, p),
+                    for (final p in snapshot.data!.take(_shownCount))
+                      _parkCard(context, p),
+                    // 50件ずつ表示（「さらに表示」で追加）
+                    if (snapshot.data!.length > _shownCount)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: OutlinedButton(
+                          onPressed: () => setState(
+                              () => _shownCount += parkBatchSize),
+                          child: Text(
+                              'さらに表示（残り${snapshot.data!.length - _shownCount}件）'),
+                        ),
+                      ),
                   ],
                   const SizedBox(height: 24),
                 ],

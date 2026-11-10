@@ -31,6 +31,10 @@ class _NearPageState extends State<NearPage> {
   Timer? _ticker;
   NearTab _tab = NearTab.recruit;
   final TextEditingController _storeSearch = TextEditingController();
+  // 一覧は50件ずつ表示（「さらに表示」で追加）
+  static const int batchSize = 50;
+  int _peopleShown = batchSize;
+  int _storesShown = batchSize;
 
   @override
   void dispose() {
@@ -178,43 +182,61 @@ class _NearPageState extends State<NearPage> {
     if (people.isEmpty) {
       return const Center(child: Text('近くに一般ユーザーがいません'));
     }
-    return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 110,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-        childAspectRatio: 0.82,
-      ),
-      itemCount: people.length,
-      itemBuilder: (context, i) {
-        final u = people[i];
-        return InkWell(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (_) => UserDetailScreen(userId: u.id),
+    // 50件ずつ表示（「さらに表示」で追加）
+    final visible = people.take(_peopleShown).toList();
+    return Column(
+      children: [
+        Expanded(
+          child: GridView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 110,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.82,
+            ),
+            itemCount: visible.length,
+            itemBuilder: (context, i) {
+              final u = visible[i];
+              return InkWell(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => UserDetailScreen(userId: u.id),
+                  ),
+                ),
+                borderRadius: BorderRadius.circular(12),
+                child: Column(
+                  children: [
+                    userAvatar(u.id, size: 64),
+                    const SizedBox(height: 6),
+                    Text(
+                      u.nickname,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    Text(
+                      appState.userDistanceLabel(u),
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: Theme.of(context).colorScheme.primary),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        if (people.length > _peopleShown)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: OutlinedButton(
+              onPressed: () => setState(() => _peopleShown += batchSize),
+              child:
+                  Text('さらに表示（残り${people.length - _peopleShown}人）'),
             ),
           ),
-          borderRadius: BorderRadius.circular(12),
-          child: Column(
-            children: [
-              userAvatar(u.id, size: 64),
-              const SizedBox(height: 6),
-              Text(
-                u.nickname,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12),
-              ),
-              Text(
-                appState.userDistanceLabel(u),
-                style: TextStyle(
-                    fontSize: 11, color: Theme.of(context).colorScheme.primary),
-              ),
-            ],
-          ),
-        );
-      },
+      ],
     );
   }
 
@@ -301,41 +323,57 @@ class _NearPageState extends State<NearPage> {
         Expanded(
           child: filtered.isEmpty
               ? const Center(child: Text('検索に一致する店がありません'))
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, i) {
-                    final s = filtered[i];
-                    return Card(
-                      child: ListTile(
-                        leading: userAvatar(s.id, size: 48),
-                        title: Text(s.nickname,
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold)),
-                        subtitle: Text(
-                          '${s.storeType} / ${appState.userDistanceLabel(s)}',
-                        ),
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.shade50,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                                color: Colors.orange.shade200),
+              : Builder(builder: (context) {
+                  // 50件ずつ表示（「さらに表示」で追加）
+                  final visible = filtered.take(_storesShown).toList();
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount:
+                        visible.length + (filtered.length > _storesShown ? 1 : 0),
+                    itemBuilder: (context, i) {
+                      if (i >= visible.length) {
+                        return Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: OutlinedButton(
+                            onPressed: () =>
+                                setState(() => _storesShown += batchSize),
+                            child: Text(
+                                'さらに表示（残り${filtered.length - _storesShown}件）'),
                           ),
-                          child: Text(
-                            'お店',
-                            style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.orange.shade900),
+                        );
+                      }
+                      final s = visible[i];
+                      return Card(
+                        child: ListTile(
+                          leading: userAvatar(s.id, size: 48),
+                          title: Text(s.nickname,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold)),
+                          subtitle: Text(
+                            '${s.storeType} / ${appState.userDistanceLabel(s)}',
                           ),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.brown.shade50,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                  color: Colors.brown.shade200),
+                            ),
+                            child: Text(
+                              'お店',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.brown.shade900),
+                            ),
+                          ),
+                          onTap: () => showStoreSheet(context, s),
                         ),
-                        onTap: () => showStoreSheet(context, s),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  );
+                }),
         ),
       ],
     );
