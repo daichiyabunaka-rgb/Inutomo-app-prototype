@@ -39,7 +39,8 @@ class _ParkPageState extends State<ParkPage> {
         _reloadIfNeeded();
         return RefreshIndicator(
           onRefresh: () async {
-            final f = fetchDogParksNear(appState.anchorLat, appState.anchorLng);
+            final f = fetchDogParksNear(appState.anchorLat, appState.anchorLng,
+                forceRefresh: true);
             setState(() {
               _anchorKey =
                   '${appState.anchorLat.toStringAsFixed(5)},${appState.anchorLng.toStringAsFixed(5)}';
@@ -62,9 +63,20 @@ class _ParkPageState extends State<ParkPage> {
                   ),
                   if (snapshot.connectionState != ConnectionState.done &&
                       !snapshot.hasError)
-                    const Padding(
-                      padding: EdgeInsets.all(32),
-                      child: Center(child: CircularProgressIndicator()),
+                    Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 12),
+                          Text(
+                            '周辺の公園を検索しています…\n'
+                            '初回は30秒〜1分ほどかかることがあります',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
                     ),
                   if (snapshot.hasError) _errorCard(theme),
                   if (snapshot.hasData) ...[

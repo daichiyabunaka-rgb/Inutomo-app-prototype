@@ -153,8 +153,24 @@ void main() {
     test('Overpassクエリは公園のみを含む（ドッグランを含まない）', () {
       final q = buildOverpassQuery(35.6812, 139.7671, radiusKm: 5);
       expect(q, isNot(contains('dog_park')));
+      // relation を含む bbox クエリは重すぎて各サーバーが502/504を返すため除外
+      expect(q, isNot(contains('relation')));
       expect(q, contains('"leisure"="park"'));
       expect(q, contains('"dog"!="no"'));
+    });
+
+    test('公園データのキャッシュ変換（Map⇔DogPark）は往復できる', () {
+      final parks = parseOverpassResponse(overpassJson, 35.6812, 139.7671);
+      for (final p in parks) {
+        final restored = dogParkFromMap(dogParkToMap(p));
+        expect(restored.osmId, p.osmId);
+        expect(restored.name, p.name);
+        expect(restored.type, p.type);
+        expect(restored.lat, p.lat);
+        expect(restored.lng, p.lng);
+        expect(restored.dogRule, p.dogRule);
+        expect(restored.openingHours, p.openingHours);
+      }
     });
   });
 
