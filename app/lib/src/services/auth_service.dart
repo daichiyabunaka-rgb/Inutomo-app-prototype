@@ -442,6 +442,19 @@ class AuthService extends ChangeNotifier {
   }) async {
     final user = _client.auth.currentUser;
     if (user == null) return;
+    // Supabase モードでローカルパス（http で始まらない値）が渡ってきた場合、
+    // 他のユーザーから見えないため icon_image_path に保存しない。
+    // 空文字列＝明示的な解除のためそのまま保存する。
+    String? effectiveIconPath;
+    if (iconImagePath != null && iconImagePath.isNotEmpty) {
+      if (!iconImagePath.startsWith('http')) {
+        effectiveIconPath = null; // ローカルパスはサーバーに保存しない
+      } else {
+        effectiveIconPath = iconImagePath;
+      }
+    } else if (iconImagePath != null && iconImagePath.isEmpty) {
+      effectiveIconPath = ''; // 明示的な画像解除
+    }
     final data = {
       // 登録時のみ入力し、更新時は渡された項目だけを書き換える
       if (!onlyUpdate) 'id': user.id,
@@ -452,7 +465,7 @@ class AuthService extends ChangeNotifier {
       'icon_category_id': ?iconCategoryId,
       'interest_ids': ?interestIds,
       'bio': ?bio,
-      'icon_image_path': ?iconImagePath,
+      'icon_image_path': ?effectiveIconPath,
       'website_url': ?websiteUrl,
       'sns_note': ?snsNote,
       'phone': ?phone,
