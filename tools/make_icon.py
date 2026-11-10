@@ -1,103 +1,92 @@
-"""ランチャーアイコン（1024px）を生成するワンオフスクリプト。
-犬とも！: ベージュの角丸背景 + 茶色の肉球（かかとに白いハート）+
-手書き風の文字（UDデジタル教科書体）。
+"""いただいたアイコン画像（tools/icon_source_1698.jpg）から
+配布用アプリアイコン（1024px）を作るワンオフスクリプト。
+画像はそのまま（アレンジ不加）。アイコンのベージュ角丸領域を検出して
+切り抜き、周囲の背景を透過する。
 """
-import math
+from PIL import Image, ImageDraw
 
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
-
+SRC = "icon_source_1698.jpg"
 SIZE = 1024
 
-BEIGE_TOP = (247, 239, 230)
-BEIGE_BOTTOM = (233, 220, 204)
-PAW_BROWN = (110, 79, 58)
-TEXT_BROWN = (110, 79, 58)
-HEART_WHITE = (255, 253, 250)
 
-FONT_PATH = r"C:\Windows\Fonts\UDDigiKyokashoN-R.ttc"
+def detect_iconbbox(im):
+    """ベージュ角丸領域の bounding box を検出する。"""
+    w, h = im.size
+    px = im.load()
+
+    def is_beige(c):
+        r, g, b = c
+        return r > 235 and g > 225 and 200 < b < 245 and r >= g >= b
+
+    xs, ys = [], []
+    for x in range(w):
+        for y in range(0, h, 2):
+            if is_beige(px[x, y]):
+                xs.append(x)
+                ys.append(y)
+                break
+    for y in range(h):
+        for x in range(0, w, 2):
+            if is_beige(px[x, y]):
+                ys.append(y)
+                break
+    return min(xs), min(ys), max(xs), max(ys)
 
 
-def rounded_bg():
-    bg = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-    for y in range(SIZE):
-        t = y / (SIZE - 1)
-        c = tuple(
-            int(BEIGE_TOP[i] + (BEIGE_BOTTOM[i] - BEIGE_TOP[i]) * t)
-            for i in range(3)
-        ) + (255,)
-        ImageDraw.Draw(bg).line([(0, y), (SIZE, y)], fill=c)
-    mask = Image.new("L", (SIZE, SIZE), 0)
-    ImageDraw.Draw(mask).rounded_rectangle(
-        [0, 0, SIZE - 1, SIZE - 1], radius=230, fill=255
+im = Image.open(SRC).convert("RGB")
+x0, y0, x1, y1 = detect_iconbbox(im)
+# 検出境界のアンチエイリアス分だけ余白を取り、正方形にする
+pad = 2
+x0, y0 = max(0, x0 - pad), max(0, y0 - pad)
+side = min(max(x1 - x0, y1 - y0) + pad, im.size[0] - x0, im.size[1] - y0)
+crop = im.crop((x0, y0, x0 + side, y0 + side))
+
+# 1024px に拡大（そのままの画を使う。補間のみ）
+icon = crop.resize((SIZE, SIZE), Image.LANCZOS).convert("RGBA")
+
+# 周囲のグレー背景を透過する（角丸の外側）。
+# 背景色は画像の四隅から取得し、色距離で判定する。
+corners = [
+    icon.getpixel((4, 4)),
+    icon.getpixel((SIZE - 5, 4)),
+    icon.getpixel((4, SIZE - 5)),
+    icon.getpixel((SIZE - 5, SIZE - 5)),
+]
+bg = tuple(sum(c[i] for c in corners) // 4 for i in range(3))
+
+mask = Image.new("L", (SIZE, SIZE), 255)
+mp = mask.load()
+
+
+def near_bg(c):
+    return (
+        abs(c[0] - bg[0]) < 18
+        and abs(c[1] - bg[1]) < 18
+        and abs(c[2] - bg[2]) < 18
     )
-    out = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-    out.paste(bg, (0, 0), mask)
-    return out
 
 
-def heart_points(cx, cy, size):
-    """上向きのハートの輪郭点を返す（size は横幅の目安）。"""
-    pts = []
-    for i in range(120):
-        t = i / 120 * 2 * math.pi
-        x = 16 * math.sin(t) ** 3
-        y = (
-            13 * math.cos(t)
-            - 5 * math.cos(2 * t)
-            - 2 * math.cos(3 * t)
-            - math.cos(4 * t)
-        )
-        pts.append((cx + x * size / 32.0, cy - y * size / 32.0))
-    return pts
+# flood fill（外周から到達できる類似色のみ透過するため、
+# 内部の同系色を誤って消さない）
+from collections import deque
 
+visited = set()
+q = deque()
+for x in range(SIZE):
+    q.append((x, 0))
+    q.append((x, SIZE - 1))
+for y in range(SIZE):
+    q.append((0, y))
+    q.append((SIZE - 1, y))
+while q:
+    x, y = q.popleft()
+    if not (0 <= x < SIZE and 0 <= y < SIZE) or (x, y) in visited:
+        continue
+    visited.add((x, y))
+    if near_bg(icon.getpixel((x, y))):
+        mp[x, y] = 0
+        q.extend([(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)])
 
-img = rounded_bg()
-draw = ImageDraw.Draw(img)
-
-# ---- 肉球の下のやわらかい影
-shadow = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-ImageDraw.Draw(shadow).ellipse(
-    [512 - 190, 330, 512 + 190, 650], fill=(170, 140, 110, 60)
-)
-img.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(12)))
-
-# ---- 指（4本。外側は少し外向きに傾ける）
-def toe(cx, cy, w, h, angle, fills):
-    layer = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-    ImageDraw.Draw(layer).ellipse(
-        [cx - w // 2, cy - h // 2, cx + w // 2, cy + h // 2], fill=fills
-    )
-    layer = layer.rotate(angle, center=(cx, cy), resample=Image.BICUBIC)
-    return layer
-
-for (cx, cy, w, h, angle) in [
-    (372, 470, 116, 138, 10),   # 左外
-    (466, 428, 106, 128, 6),    # 左内
-    (558, 428, 106, 128, -6),   # 右内
-    (652, 470, 116, 138, -10),  # 右外
-]:
-    img.alpha_composite(toe(cx, cy, w, h, angle, PAW_BROWN + (255,)))
-
-# ---- かかと（大きめのパッド）
-draw.ellipse([512 - 160, 470, 512 + 160, 790], fill=PAW_BROWN + (255,))
-
-# ---- かかとの中に白いハート
-draw.polygon(
-    heart_points(512, 628, 120), fill=HEART_WHITE + (255,)
-)
-
-# ---- 手書き風の文字
-font = ImageFont.truetype(FONT_PATH, 138, index=0)
-text = "いぬとも!"
-bbox = draw.textbbox((0, 0), text, font=font)
-tw = bbox[2] - bbox[0]
-th = bbox[3] - bbox[1]
-draw.text(
-    (512 - tw // 2 - bbox[0], 840 - th // 2 - bbox[1]),
-    text,
-    font=font,
-    fill=TEXT_BROWN + (255,),
-)
-
-img.save("app_icon.png")
-print("saved app_icon.png")
+icon.putalpha(mask)
+icon.save("app_icon.png")
+print("saved app_icon.png", icon.size, "bg=", bg)
