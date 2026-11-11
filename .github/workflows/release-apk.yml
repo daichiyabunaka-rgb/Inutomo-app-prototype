@@ -1,0 +1,76 @@
+name: Release Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v1.0.0)"
+        required: true
+        default: v1.0.0
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Restore signing keystore
+        run: |
+          echo "${{ secrets.UPLOAD_KEYSTORE_BASE64 }}" | base64 -d > app/android/app/upload.keystore
+          printf 'storeFile=upload.keystore\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' \
+            "${{ secrets.UPLOAD_KEYSTORE_STORE_PASSWORD }}" \
+            "${{ secrets.UPLOAD_KEYSTORE_ALIAS }}" \
+            "${{ secrets.UPLOAD_KEYSTORE_KEY_PASSWORD }}" > app/android/app/key.properties
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.8
+          cache: true
+
+      - name: Pub get
+        working-directory: app
+        run: flutter pub get
+
+      - name: Analyze & test
+        working-directory: app
+        run: |
+          flutter analyze
+          flutter test
+
+      - name: Build release APK
+        working-directory: app
+        run: |
+          ARGS=""
+          if [ -n "${{ secrets.SUPABASE_URL }}" ] && [ -n "${{ secrets.SUPABASE_PUBLISHABLE_KEY }}" ]; then
+            ARGS="--dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}"
+          fi
+          flutter build apk --release $ARGS
+
+      - name: Zip APK
+        run: |
+          TAG="${{ inputs.tag }}"
+          cd app/build/app/outputs/flutter-apk
+          zip -j "$GITHUB_WORKSPACE/inutomo-$TAG-android-apk.zip" app-release.apk
+          ls -la "$GITHUB_WORKSPACE/inutomo-$TAG-android-apk.zip"
+
+      - name: Attach to release and publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          ZIP="$GITHUB_WORKSPACE/inutomo-$TAG-android-apk.zip"
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY"; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" \
+              --title "犬とも！ $TAG" --notes "Android APK"
+          fi
+          gh release upload "$TAG" "$ZIP" --clobber --repo "$GITHUB_REPOSITORY"
+          gh release edit "$TAG" --draft=false --repo "$GITHUB_REPOSITORY"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY"

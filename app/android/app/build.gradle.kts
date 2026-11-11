@@ -1,9 +1,21 @@
 import java.util.Base64
+import java.util.Properties
 
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// 署名情報（キーストアは git 管理外。key.properties があれば release 署名、
+// 無ければ従来どおり debug キーで署名する）。
+// ベータ継続性のため、これまでのリリースAPKと同じ「このPCのデバッグキー」を
+// key.properties + upload.keystore で CI にも渡す（ワークフロー参照）。
+val keystoreProperties = Properties()
+val keystorePropertiesFile = file("key.properties")
+val hasUploadKeystore = keystorePropertiesFile.exists()
+if (hasUploadKeystore) {
+    keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 }
 
 // flutter build の --dart-define を gradle から読む。
@@ -53,11 +65,26 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("upload") {
+            if (hasUploadKeystore) {
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // key.properties があれば正式なアップロードキー、無ければ従来の
+            // デバッグキー（既存ベータユーザーは上書きインストールで継続）
+            signingConfig = if (hasUploadKeystore) {
+                signingConfigs.getByName("upload")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

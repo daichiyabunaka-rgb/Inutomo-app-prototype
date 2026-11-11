@@ -85,7 +85,9 @@ class IconService {
         final uid = client.auth.currentUser?.id;
         if (uid != null) {
           final bytes = File(dest).readAsBytesSync();
-          final remotePath = '$uid/${prefix}_$ts.jpg';
+          // 共有プロジェクトでは $uid/<appId>/ 配下に置く
+          // （Storageポリシーは (foldername)[1] = uid を検証するため通用する）
+          final remotePath = '$uid/${AppConfig.appId}/${prefix}_$ts.jpg';
           await client.storage.from(bucket).uploadBinary(
                 remotePath,
                 bytes,
