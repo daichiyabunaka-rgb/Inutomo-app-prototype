@@ -137,6 +137,10 @@ class UserDetailScreen extends StatelessWidget {
                     style: theme.textTheme.headlineSmall!
                         .copyWith(fontWeight: FontWeight.bold),
                   ),
+                  if (user.isOtherApp) ...[
+                    const SizedBox(height: 4),
+                    _appBadge(theme, user.appSourceLabel),
+                  ],
                   Text(
                     user.isBusiness
                         ? '${(user as BusinessUser).storeType} / '
@@ -243,7 +247,8 @@ class UserDetailScreen extends StatelessWidget {
                 icon: const Icon(Icons.chat_bubble_outline),
                 label: const Text('DMを始める'),
                 onPressed: () async {
-                  final room = await appState.getOrCreateDm(user.id);
+                  final room = await appState.getOrCreateDm(user.id,
+                      crossApp: user.isOtherApp);
                   if (!context.mounted) return;
                   Navigator.of(context).push(
                     MaterialPageRoute<void>(
@@ -280,6 +285,22 @@ class UserDetailScreen extends StatelessWidget {
               ),
           ],
         ],
+      ),
+    );
+  }
+
+  /// 他アプリ（ともつく！シリーズ）から表示されていることを示すバッジ
+  Widget _appBadge(ThemeData theme, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        '$labelから表示',
+        style: theme.textTheme.labelSmall!
+            .copyWith(color: theme.colorScheme.primary),
       ),
     );
   }
