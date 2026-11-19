@@ -40,6 +40,19 @@ class IconService {
     );
   }
 
+  /// 近況報告の投稿写真（800px・品質70。十分伝わり、容量は1/10以下）
+  Future<String?> pickDogReportPhoto(ImageSource source) {
+    return _pickAndSave(
+      source,
+      subDir: 'dog_photos',
+      prefix: 'dog_report',
+      bucket: 'dog-report-photos',
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 70,
+    );
+  }
+
   /// アップロードするファイルの上限（KB）。超える場合は警告ログのみ
   /// （image_picker のリサイズでほぼ確実に収まるが、稀に端末によって
   ///  圧縮が効かないケースがあるため保険として設ける）

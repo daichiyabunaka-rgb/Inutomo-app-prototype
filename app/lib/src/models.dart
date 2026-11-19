@@ -454,6 +454,48 @@ class ProtectedDog {
   bool get isLost => kind == 'lost';
 }
 
+/// 犬の「近況報告」掲示板（近隣での近況・写真・イベント報告の共有）。
+/// kind: 'shoot' = 撮影（愛犬・ドッグランの写真の報告）
+///       'post'  = つぶやき（近況・ひとことの報告）
+///       'event' = イベント（ドッグランオフ会・イベント等の報告）
+/// 他人が写る画像は許諾を確認できたもののみ投稿する。
+class DogReport {
+  final String id;
+  final String posterId;
+  final String kind; // 'shoot' | 'post' | 'event'
+  final String itemDescription; // タイトル（愛犬・できごとなど）
+  final String areaName; // 場所（ドッグラン・公園など）
+  final String detail; // 近況・ハイライトの自由記述
+  final String? photoPath; // 投稿写真（端末内パス or 公開URL）
+  final double lat;
+  final double lng;
+  final DateTime createdAt;
+  bool closed; // 完了（一覧から非表示にした）
+
+  DogReport({
+    required this.id,
+    required this.posterId,
+    required this.kind,
+    required this.itemDescription,
+    required this.areaName,
+    required this.detail,
+    required this.lat,
+    required this.lng,
+    required this.createdAt,
+    this.photoPath,
+    this.closed = false,
+  });
+
+  /// 撮影の報告
+  bool get isShoot => kind == 'shoot';
+
+  /// つぶやき（近況・ひとこと）
+  bool get isPost => kind == 'post';
+
+  /// イベントの報告
+  bool get isEvent => kind == 'event';
+}
+
 class ChatMessage {
   final String id;
   final String roomId;

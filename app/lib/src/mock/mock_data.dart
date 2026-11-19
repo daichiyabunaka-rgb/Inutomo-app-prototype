@@ -367,6 +367,81 @@ List<ProtectedDog> buildSeedProtectedDogs(
   ];
 }
 
+/// ---------- 近況報告のシード（anchor＝現在地からの相対距離で配置） ----------
+
+class _DogReportSeedSpec {
+  final String id;
+  final String posterId;
+  final String kind;
+  final String itemDescription;
+  final String areaName;
+  final String detail;
+  final double northKm;
+  final double eastKm;
+  final Duration age;
+  const _DogReportSeedSpec(this.id, this.posterId, this.kind,
+      this.itemDescription, this.areaName, this.detail, this.northKm,
+      this.eastKm, this.age);
+}
+
+const List<_DogReportSeedSpec> _dogReportSeedSpecs = [
+  _DogReportSeedSpec(
+    'dr-seed-1',
+    'u-shiba-moku',
+    'shoot',
+    'わんわん公園で走り回る姿を撮影しました',
+    'わんわん公園 周辺',
+    '久しぶりのドッグランでずっと走り回っていました。'
+        '一緒に遊んでくれるワンコと飼い主さんを募集しています。',
+    0.3,
+    -0.6,
+    Duration(hours: 2),
+  ),
+  _DogReportSeedSpec(
+    'dr-seed-2',
+    'u-toypoodle-aoi',
+    'post',
+    '今週末はトリミングの予定です',
+    '駅東側の商店街',
+    '夏毛の準備でさっぱりしてきます。'
+        'おすすめのトリマーさんがいたら教えてください。',
+    -0.2,
+    0.8,
+    Duration(hours: 5),
+  ),
+  _DogReportSeedSpec(
+    'dr-seed-3',
+    'u-golden-rin',
+    'event',
+    'ドッグランのオフ会に参加してきました',
+    '河川敷リバーサイド公園 周辺',
+    '初めてのオフ会でしたが、みんなで走れて'
+        '楽しかったです。次回も参加予定です。',
+    -0.9,
+    -0.3,
+    Duration(hours: 26),
+  ),
+];
+
+List<DogReport> buildSeedDogReports(
+    DateTime now, double anchorLat, double anchorLng) {
+  final cos = (anchorLat * math.pi / 180.0).abs().clamp(0.01, 1.0);
+  return [
+    for (final s in _dogReportSeedSpecs)
+      DogReport(
+        id: s.id,
+        posterId: s.posterId,
+        kind: s.kind,
+        itemDescription: s.itemDescription,
+        areaName: s.areaName,
+        detail: s.detail,
+        lat: anchorLat + s.northKm / _kmPerDegLat,
+        lng: anchorLng + s.eastKm / (_kmPerDegLat * cos),
+        createdAt: now.subtract(s.age),
+      ),
+  ];
+}
+
 /// モックの返信候補（デモの自動応答に使う。本開発では Supabase Realtime に置換）
 const List<String> mockReplies = [
   'よろしくお願いします！',

@@ -297,6 +297,7 @@ class AppState extends ChangeNotifier {
     anchorLng = lng;
     _rebuildMockUsers();
     _replaceMockProtectedDogSeeds();
+    _replaceMockDogReports();
     if (me != null) {
       // ビジネスユーザーは店舗の位置（プロフィール位置）を GPS で
       // 更新しない（登録時に設定した位置に固定）
@@ -357,6 +358,7 @@ class AppState extends ChangeNotifier {
     }
     _seedMockCommunities();
     _seedMockProtectedDogs();
+    _seedMockDogReports();
   }
 
   /// ログアウト
@@ -433,6 +435,11 @@ class AppState extends ChangeNotifier {
           .where((p) => p.reporterId == me!.id && !p.id.startsWith('pd-seed-'))
           .map(persist.protectedDogToMap)
           .toList(),
+      // シード(id付き dr-seed-)は保存しない（再ログイン時に再生成される）
+      'dogReports': _dogReports
+          .where((p) => p.posterId == me!.id && !p.id.startsWith('dr-seed-'))
+          .map(persist.dogReportToMap)
+          .toList(),
     };
   }
 
@@ -497,6 +504,11 @@ class AppState extends ChangeNotifier {
         ..addAll(((pruned['protectedDogs'] as List?) ?? const [])
             .map((e) => persist.protectedDogFromMap(e as Map<String, dynamic>))
             .whereType<ProtectedDog>());
+      _dogReports
+        ..clear()
+        ..addAll(((pruned['dogReports'] as List?) ?? const [])
+            .map((e) => persist.dogReportFromMap(e as Map<String, dynamic>))
+            .whereType<DogReport>());
       return true;
     } catch (_) {
       // 壊れたスナップショットは無視して普通に初期化
@@ -595,6 +607,21 @@ class AppState extends ChangeNotifier {
           try {
             final reporter = await supabaseData.fetchProfileById(d.reporterId);
             if (reporter != null) _users[d.reporterId] = reporter;
+          } catch (_) {
+            // 無視
+          }
+        }
+      }
+      // 近況報告
+      final reports = await supabaseData.fetchDogReports(me!);
+      _dogReports
+        ..clear()
+        ..addAll(reports);
+      for (final d in reports) {
+        if (!_users.containsKey(d.posterId)) {
+          try {
+            final reporter = await supabaseData.fetchProfileById(d.posterId);
+            if (reporter != null) _users[d.posterId] = reporter;
           } catch (_) {
             // 無視
           }
@@ -1465,6 +1492,109 @@ class AppState extends ChangeNotifier {
     if (_remote || !_useMockData) return;
     _protectedDogs.removeWhere((p) => p.id.startsWith('pd-seed-'));
     _protectedDogs.addAll(buildSeedProtectedDogs(_now(), anchorLat, anchorLng));
+  }
+
+  // --------------------------------------------------------- 近況報告
+
+  final List<DogReport> _dogReports = [];
+
+  /// 解決済みとブロック済みユーザーの投稿を除いた近況報告の一覧
+  /// （距離近い順）
+  List<DogReport> get dogReports {
+    if (me == null) return const [];
+    return _dogReports
+        .where((p) => !p.closed && !isBlocked(p.posterId))
+        .toList()
+      ..sort((a, b) =>
+          _dogReportDistance(a).compareTo(_dogReportDistance(b)));
+  }
+
+  double _dogReportDistance(DogReport p) {
+    if (me == null) return double.infinity;
+    return haversineKm(me!.lat, me!.lng, p.lat, p.lng);
+  }
+
+  /// 登録までの粗い距離バンド
+  String dogReportDistanceLabel(DogReport p) {
+    final km = _dogReportDistance(p);
+    return km.isFinite ? distanceLabel(km) : '';
+  }
+
+  /// 近況報告（shoot / post / event）を登録する
+  Future<DogReport> registerDogReport({
+    required String kind,
+    required String itemDescription,
+    required String areaName,
+    required String detail,
+    String? photoPath,
+  }) async {
+    if (_remote) {
+      // アップロード失敗で端末内パス（http で始まらない）が返ってきた場合、
+      // 他の端末から見えないため photoPath として保存しない
+      final effectivePhoto = (photoPath != null &&
+              photoPath.isNotEmpty &&
+              photoPath.startsWith('http'))
+          ? photoPath
+          : null;
+      final created = await supabaseData.createDogReport(
+        kind: kind,
+        itemDescription: itemDescription,
+        areaName: areaName,
+        detail: detail,
+        photoPath: effectivePhoto,
+        lat: me!.lat,
+        lng: me!.lng,
+      );
+      _dogReports.insert(0, created);
+      notifyListeners();
+      return created;
+    }
+    final item = DogReport(
+      id: 'dr-${_seq++}',
+      posterId: me!.id,
+      kind: kind,
+      itemDescription: itemDescription,
+      areaName: areaName,
+      detail: detail,
+      photoPath: photoPath,
+      lat: me!.lat,
+      lng: me!.lng,
+      createdAt: _now(),
+    );
+    _dogReports.insert(0, item);
+    notifyListeners();
+    return item;
+  }
+
+  /// 報告を完了にする（一覧から外す）
+  Future<void> closeDogReport(String id) async {
+    for (final p in _dogReports) {
+      if (p.id == id) {
+        p.closed = true;
+        break;
+      }
+    }
+    notifyListeners();
+    if (_remote) {
+      try {
+        await supabaseData.closeDogReport(id);
+      } catch (_) {
+        // 無視（再取得で同期される）
+      }
+    }
+  }
+
+  /// モック: シードの近況報告を現在地周囲に配置する
+  void _seedMockDogReports() {
+    if (_dogReports.any((p) => p.id.startsWith('dr-seed-'))) return;
+    _dogReports.addAll(buildSeedDogReports(_now(), anchorLat, anchorLng));
+  }
+
+  /// 実 GPS で現在地が変わったら、シードの投稿も作り直す（開発ビルドのみ）
+  void _replaceMockDogReports() {
+    if (_remote || !_useMockData) return;
+    _dogReports.removeWhere((p) => p.id.startsWith('dr-seed-'));
+    _dogReports.addAll(buildSeedDogReports(_now(), anchorLat, anchorLng));
   }
 
   // ------------------------------------------------------------ rooms / DM
